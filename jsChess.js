@@ -10,9 +10,9 @@ class GameBoard {
 		['a1', 'b1', 'c1', 'd1', 'e1', 'f1', 'g1', 'h1']]
 
 	constructor(dimension = 8) { // create an 8 by 8 chessboard
-		this.height = dimension
-		this.width = dimension
+		this.size = dimension
 		this.array = this.generateBoard()
+		this.pieces = this.generatePieces()
 		//this.updateStack = [] // could keep a list of rendering updates needed?
 		this.populateBoard()
 	}
@@ -22,9 +22,9 @@ class GameBoard {
 		var switchColor = true
 		var rPtr = 0 
 		var fPtr = 0
-		for (var i = 0; i < this.width; i++) {
+		for (var i = 0; i < this.size; i++) {
 			array.push([])
-			for (var j = 0; j < this.height; j++) {
+			for (var j = 0; j < this.size; j++) {
 				let sq = new Square(
 					switchColor === true ? '#a3524e' : '#f2e8e7', 
 					GameBoard.positions[rPtr][fPtr])
@@ -43,15 +43,66 @@ class GameBoard {
 		return array
 	}
 
+	// perhaps populateBoard() needs to be removed, and each Piece here be
+	// given its starting position instead of 'na'.
+	// a dictionary, keyed by GameBoard.position string that contains all
+	// squares on the GameBoard may be useful as well.
+	// that way we could simply iterate through the pieces dictionary
+	// and for each Piece p, do squares[p.pos].addPiece(p)
+	generatePieces() {
+		var pieces = {}	
+		// black pawns
+		pieces['P1b'] = new Pawn('black', 'na')
+		pieces['P2b'] = new Pawn('black', 'na')
+		pieces['P3b'] = new Pawn('black', 'na')
+		pieces['P4b'] = new Pawn('black', 'na')
+		pieces['P5b'] = new Pawn('black', 'na')
+		pieces['P6b'] = new Pawn('black', 'na')
+		pieces['P7b'] = new Pawn('black', 'na')
+		pieces['P8b'] = new Pawn('black', 'na')
+
+		// black pieces
+		pieces['R1b'] = new Rook('black', 'na')
+		pieces['R2b'] = new Rook('black', 'na')
+		pieces['N1b'] = new Knight('black', 'na')
+		pieces['N2b'] = new Knight('black', 'na')
+		pieces['B1b'] = new Bishop('black', 'na')
+		pieces['B2b'] = new Bishop('black', 'na')
+		pieces['Qb'] = new Queen('black', 'na')
+		pieces['Kb'] = new King('black', 'na')
+		
+		// white pawns
+		pieces['P1w'] = new Pawn('white', 'na')
+		pieces['P2w'] = new Pawn('white', 'na')
+		pieces['P3w'] = new Pawn('white', 'na')
+		pieces['P4w'] = new Pawn('white', 'na')
+		pieces['P5w'] = new Pawn('white', 'na')
+		pieces['P6w'] = new Pawn('white', 'na')
+		pieces['P7w'] = new Pawn('white', 'na')
+		pieces['P8w'] = new Pawn('white', 'na')
+
+		// white pieces
+		pieces['R1w'] = new Rook('white', 'na')
+		pieces['R2w'] = new Rook('white', 'na')
+		pieces['N1w'] = new Knight('white', 'na')
+		pieces['N2w'] = new Knight('white', 'na')
+		pieces['B1w'] = new Bishop('white', 'na')
+		pieces['B2w'] = new Bishop('white', 'na')
+		pieces['Qw'] = new Queen('white', 'na')
+		pieces['Kw'] = new King('white', 'na')
+		
+		return pieces
+	}
+
 	populateBoard() { // hard coded for 8x8 board
 		// black pawns
-		for (var j = 0; j < 8; j++) {
+		for (var j = 0; j < this.size; j++) {
 			var cur = this.array[1][j]
 			cur.addPiece(new Pawn('black', cur.id))
 		}
 
 		// white pawns
-		for (var k = 0; k < 8; k++) {
+		for (var k = 0; k < this.size; k++) {
 			var cur = this.array[6][k]
 			cur.addPiece(new Pawn('white', cur.id))
 		}
@@ -123,22 +174,22 @@ class Piece {
 	What if Pieces were assigned a Square object instead of a coord string?
 
 	Perferably this is done in a way such that the Square is easily accessed
-	within the GameBoard object (ex. this.space is an index tuple that
+	within the GameBoard object (ex. this.pos is an index tuple that
 	corresponds with the Square's location in the GameBoard's array)
 	*/
 
-	constructor(coordinate) {
-		this.space = coordinate 
+	constructor(position) {
+		this.pos = position
 	}
 
-	move(coordinate) {
-		this.space = coordinate
+	move(position) {
+		this.pos = position
 	}
 }
 
 class Pawn extends Piece {
-	constructor(color, coordinate) {
-		super(coordinate)
+	constructor(color, position) {
+		super(position)
 		this.color = color
 		this.moveset = ['pawn moveset']
 		if (this.color == 'white') {
@@ -150,8 +201,8 @@ class Pawn extends Piece {
 }
 
 class Rook extends Piece {
-	constructor(color, coordinate) {
-		super(coordinate)
+	constructor(color, position) {
+		super(position)
 		this.color = color
 		this.moveset = ['rook moveset']
 		if (this.color == 'white') {
@@ -163,8 +214,8 @@ class Rook extends Piece {
 }
 
 class Knight extends Piece {
-	constructor(color, coordinate) {
-		super(coordinate)
+	constructor(color, position) {
+		super(position)
 		this.color = color
 		this.moveset = ['knight moveset']
 		if (this.color == 'white') {
@@ -176,8 +227,8 @@ class Knight extends Piece {
 }
 
 class Bishop extends Piece {
-	constructor(color, coordinate) {
-		super(coordinate)
+	constructor(color, position) {
+		super(position)
 		this.color = color
 		this.moveset = ['bishop moveset']
 		if (this.color == 'white') {
@@ -189,8 +240,8 @@ class Bishop extends Piece {
 }
 
 class Queen extends Piece {
-	constructor(color, coordinate) {
-		super(coordinate)
+	constructor(color, position) {
+		super(position)
 		this.color = color
 		this.moveset = ['queen moveset']
 		if (this.color == 'white') {
@@ -202,8 +253,8 @@ class Queen extends Piece {
 }
 
 class King extends Piece {
-	constructor(color, coordinate) {
-		super(coordinate)
+	constructor(color, position) {
+		super(position)
 		this.color = color
 		this.moveset = ['king moveset']
 		if (this.color == 'white') {
