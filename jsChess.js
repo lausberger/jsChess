@@ -77,7 +77,7 @@ class GameBoard {
 	}
 
 	// alternative way that lets us phase out array, as it is too hard to
-	// access specific Square objects
+	// access specific Square objects by name
 	generateBoard2() {
 		var spaces = {}
 		var switchColor = false
@@ -145,6 +145,7 @@ class GameBoard {
 		return pieces
 	}
 
+	// pretty much outmoded
 	populateBoard() { // hard coded for 8x8 board
 		// black pawns
 		for (var j = 0; j < this.size; j++) {
