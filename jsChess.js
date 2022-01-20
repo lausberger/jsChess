@@ -78,9 +78,12 @@ class GameBoard {
 
 	// alternative way that lets us phase out array, as it is too hard to
 	// access specific Square objects by name
+	// #a3524e = burgundy
+	// #f2e8e7 = red-tinted white
 	generateBoard2() {
 		var spaces = {}
 		var switchColor = false
+		/*
 		for (var i in GameBoard.altPositions) {
 			let key = GameBoard.altPositions[i]
 			spaces[key] = new Square(
@@ -90,63 +93,72 @@ class GameBoard {
 				switchColor = !switchColor
 			}
 		}
-		console.log(spaces)
+		*/
+		for (var i in GameBoard.positions) {
+			for (var j in GameBoard.positions[i]) {
+				let key = GameBoard.positions[i][j]
+				spaces[key] = new Square(
+					switchColor === true ? '#a3524e' : '#f2e8e7', 
+					key)
+				switchColor = !switchColor
+			}
+			switchColor = !switchColor
+		}
+		//console.log(spaces)
 		return spaces
 	}
 
 	// perhaps populateBoard() needs to be removed, and each Piece here be
 	// given its starting position instead of 'na'.
-	// a dictionary, keyed by GameBoard.position string that contains all
-	// squares on the GameBoard may be useful as well.
 	// that way we could simply iterate through the pieces dictionary
 	// and for each Piece p, do squares[p.pos].addPiece(p)
 	generatePieces() {
 		var pieces = {}	
 		// black pawns
-		pieces['P1b'] = new Pawn('black', 'na')
-		pieces['P2b'] = new Pawn('black', 'na')
-		pieces['P3b'] = new Pawn('black', 'na')
-		pieces['P4b'] = new Pawn('black', 'na')
-		pieces['P5b'] = new Pawn('black', 'na')
-		pieces['P6b'] = new Pawn('black', 'na')
-		pieces['P7b'] = new Pawn('black', 'na')
-		pieces['P8b'] = new Pawn('black', 'na')
+		pieces['P1b'] = new Pawn('black', 'a7')
+		pieces['P2b'] = new Pawn('black', 'b7')
+		pieces['P3b'] = new Pawn('black', 'c7')
+		pieces['P4b'] = new Pawn('black', 'd7')
+		pieces['P5b'] = new Pawn('black', 'e7')
+		pieces['P6b'] = new Pawn('black', 'f7')
+		pieces['P7b'] = new Pawn('black', 'g7')
+		pieces['P8b'] = new Pawn('black', 'h7')
 
 		// black pieces
-		pieces['R1b'] = new Rook('black', 'na')
-		pieces['R2b'] = new Rook('black', 'na')
-		pieces['N1b'] = new Knight('black', 'na')
-		pieces['N2b'] = new Knight('black', 'na')
-		pieces['B1b'] = new Bishop('black', 'na')
-		pieces['B2b'] = new Bishop('black', 'na')
-		pieces['Qb'] = new Queen('black', 'na')
-		pieces['Kb'] = new King('black', 'na')
+		pieces['R8b'] = new Rook('black', 'a8')
+		pieces['R2b'] = new Rook('black', 'h8')
+		pieces['N8b'] = new Knight('black', 'b8')
+		pieces['N2b'] = new Knight('black', 'g8')
+		pieces['B8b'] = new Bishop('black', 'c8')
+		pieces['B2b'] = new Bishop('black', 'f8')
+		pieces['Qb'] = new Queen('black', 'd8')
+		pieces['Kb'] = new King('black', 'e8')
 		
 		// white pawns
-		pieces['P1w'] = new Pawn('white', 'na')
-		pieces['P2w'] = new Pawn('white', 'na')
-		pieces['P3w'] = new Pawn('white', 'na')
-		pieces['P4w'] = new Pawn('white', 'na')
-		pieces['P5w'] = new Pawn('white', 'na')
-		pieces['P6w'] = new Pawn('white', 'na')
-		pieces['P7w'] = new Pawn('white', 'na')
-		pieces['P8w'] = new Pawn('white', 'na')
+		pieces['P1w'] = new Pawn('white', 'a2')
+		pieces['P2w'] = new Pawn('white', 'b2')
+		pieces['P3w'] = new Pawn('white', 'c2')
+		pieces['P4w'] = new Pawn('white', 'd2')
+		pieces['P5w'] = new Pawn('white', 'e2')
+		pieces['P6w'] = new Pawn('white', 'f2')
+		pieces['P7w'] = new Pawn('white', 'g2')
+		pieces['P8w'] = new Pawn('white', 'h2')
 
 		// white pieces
-		pieces['R1w'] = new Rook('white', 'na')
-		pieces['R2w'] = new Rook('white', 'na')
-		pieces['N1w'] = new Knight('white', 'na')
-		pieces['N2w'] = new Knight('white', 'na')
-		pieces['B1w'] = new Bishop('white', 'na')
-		pieces['B2w'] = new Bishop('white', 'na')
-		pieces['Qw'] = new Queen('white', 'na')
-		pieces['Kw'] = new King('white', 'na')
+		pieces['R1w'] = new Rook('white', 'a1')
+		pieces['R2w'] = new Rook('white', 'h1')
+		pieces['N1w'] = new Knight('white', 'b1')
+		pieces['N2w'] = new Knight('white', 'g1')
+		pieces['B1w'] = new Bishop('white', 'c1')
+		pieces['B2w'] = new Bishop('white', 'f1')
+		pieces['Qw'] = new Queen('white', 'd1')
+		pieces['Kw'] = new King('white', 'e1')
 		
 		return pieces
 	}
 
-	// pretty much outmoded
 	populateBoard() { // hard coded for 8x8 board
+		/*
 		// black pawns
 		for (var j = 0; j < this.size; j++) {
 			var cur = this.array[1][j]
@@ -178,9 +190,19 @@ class GameBoard {
 		this.array[7][5].addPiece(new Bishop('white',this.array[7][5].id))
 		this.array[7][3].addPiece(new Queen('white',this.array[7][3].id))
 		this.array[7][4].addPiece(new King('white',this.array[7][4].id))
+		*/
+
+		for (var name in this.pieces) {
+			let p = this.pieces[name]
+			console.log(p)
+			console.log(p.pos)
+			this.spaces[p.pos].addPiece(p)
+		}
+		console.log(this.spaces)
 	}
 
-	renderBoard() {
+	/*
+	orenderBoard() {
 		var rBoard = document.getElementById('chessBoard')
 		for (var i in this.array) {
 			var rRow = document.createElement('div')
@@ -201,7 +223,32 @@ class GameBoard {
 			}
 			rBoard.appendChild(rRow)
 		}
-		console.log(this.array)
+	}
+	*/
+
+	// generate html elements from top to bottom
+	renderBoard() {
+		var rBoard = document.getElementById('chessBoard')
+		for (var i = 8; i > 0; i--) {
+			var rRow = document.createElement('div')
+			rRow.className = 'row'
+			rRow.id = i 
+			for (var j in GameBoard.fileHelper[i]) {
+				let id = GameBoard.fileHelper[i][j]
+				var rSquare = document.createElement('div')
+				rSquare.className = 'square'
+				rSquare.id = id
+				rSquare.style.backgroundColor = this.spaces[id].color
+				rRow.appendChild(rSquare)
+				if (this.spaces[id].contents != 'empty') {
+					var rPiece = document.createElement('img')
+					rPiece.className = 'piece'
+					rPiece.src = this.spaces[id].contents.img
+					rSquare.appendChild(rPiece)
+				}
+			}
+			rBoard.appendChild(rRow)
+		}
 	}
 
 	updateBoard() {
@@ -222,14 +269,6 @@ class Square {
 }
 
 class Piece {
-	/*
-	What if Pieces were assigned a Square object instead of a coord string?
-
-	Perferably this is done in a way such that the Square is easily accessed
-	within the GameBoard object (ex. this.pos is an index tuple that
-	corresponds with the Square's location in the GameBoard's array)
-	*/
-
 	constructor(position) {
 		this.pos = position
 	}
