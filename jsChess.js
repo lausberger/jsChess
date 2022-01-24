@@ -9,7 +9,7 @@ class GameBoard {
 		['a2', 'b2', 'c2', 'd2', 'e2', 'f2', 'g2', 'h2'],
 		['a1', 'b1', 'c1', 'd1', 'e1', 'f1', 'g1', 'h1']]
 	
-	// could replace positions if we keep the Helper dicts
+	// appears largely useless at the moment
 	static altPositions = [
 		'a8', 'b8', 'c8', 'd8', 'e8', 'f8', 'g8', 'h8',
 		'a7', 'b7', 'c7', 'd7', 'e7', 'f7', 'g7', 'h7',
@@ -43,14 +43,16 @@ class GameBoard {
 
 	constructor(dimension = 8) { // create an 8 by 8 chessboard
 		this.size = dimension
-		this.array = this.generateBoard()
-		this.spaces = this.generateBoard2()
+		//this.array = this.oldgenerateBoard()
+		this.spaces = this.generateBoard()
 		this.pieces = this.generatePieces()
 		//this.updateStack = [] // could keep a list of rendering updates needed?
 		this.populateBoard()
 	}
 
-	generateBoard() {
+	/*
+	// should no longer be needed
+	oldgenerateBoard() {
 		var array = []
 		var switchColor = false
 		var rPtr = 0 
@@ -75,25 +77,15 @@ class GameBoard {
 
 		return array
 	}
+	*/
 
 	// alternative way that lets us phase out array, as it is too hard to
 	// access specific Square objects by name
 	// #a3524e = burgundy
 	// #f2e8e7 = red-tinted white
-	generateBoard2() {
+	generateBoard() {
 		var spaces = {}
 		var switchColor = false
-		/*
-		for (var i in GameBoard.altPositions) {
-			let key = GameBoard.altPositions[i]
-			spaces[key] = new Square(
-				switchColor === true ? '#a3524e' : '#f2e8e7', 
-				key)
-			if (i % 7 != 0) {
-				switchColor = !switchColor
-			}
-		}
-		*/
 		for (var i in GameBoard.positions) {
 			for (var j in GameBoard.positions[i]) {
 				let key = GameBoard.positions[i][j]
@@ -108,10 +100,6 @@ class GameBoard {
 		return spaces
 	}
 
-	// perhaps populateBoard() needs to be removed, and each Piece here be
-	// given its starting position instead of 'na'.
-	// that way we could simply iterate through the pieces dictionary
-	// and for each Piece p, do squares[p.pos].addPiece(p)
 	generatePieces() {
 		var pieces = {}	
 		// black pawns
@@ -158,51 +146,16 @@ class GameBoard {
 	}
 
 	populateBoard() { // hard coded for 8x8 board
-		/*
-		// black pawns
-		for (var j = 0; j < this.size; j++) {
-			var cur = this.array[1][j]
-			cur.addPiece(new Pawn('black', cur.id))
-		}
-
-		// white pawns
-		for (var k = 0; k < this.size; k++) {
-			var cur = this.array[6][k]
-			cur.addPiece(new Pawn('white', cur.id))
-		}
-
-		// black pieces
-		this.array[0][0].addPiece(new Rook('black', this.array[0][0].id))
-		this.array[0][7].addPiece(new Rook('black', this.array[0][7].id))
-		this.array[0][1].addPiece(new Knight('black',this.array[0][1].id))
-		this.array[0][6].addPiece(new Knight('black',this.array[0][6].id))
-		this.array[0][2].addPiece(new Bishop('black',this.array[0][2].id))
-		this.array[0][5].addPiece(new Bishop('black',this.array[0][5].id))
-		this.array[0][3].addPiece(new Queen('black',this.array[0][3].id))
-		this.array[0][4].addPiece(new King('black',this.array[0][4].id))
-		
-		// white pieces
-		this.array[7][0].addPiece(new Rook('white', this.array[7][0].id))
-		this.array[7][7].addPiece(new Rook('white', this.array[7][7].id))
-		this.array[7][1].addPiece(new Knight('white',this.array[7][1].id))
-		this.array[7][6].addPiece(new Knight('white',this.array[7][6].id))
-		this.array[7][2].addPiece(new Bishop('white',this.array[7][2].id))
-		this.array[7][5].addPiece(new Bishop('white',this.array[7][5].id))
-		this.array[7][3].addPiece(new Queen('white',this.array[7][3].id))
-		this.array[7][4].addPiece(new King('white',this.array[7][4].id))
-		*/
-
 		for (var name in this.pieces) {
 			let p = this.pieces[name]
-			console.log(p)
-			console.log(p.pos)
 			this.spaces[p.pos].addPiece(p)
 		}
 		console.log(this.spaces)
 	}
 
-	/*
-	orenderBoard() {
+	/* 
+	// initial board rendering that used the array object
+	oldrenderBoard() {
 		var rBoard = document.getElementById('chessBoard')
 		for (var i in this.array) {
 			var rRow = document.createElement('div')
@@ -244,6 +197,11 @@ class GameBoard {
 					var rPiece = document.createElement('img')
 					rPiece.className = 'piece'
 					rPiece.src = this.spaces[id].contents.img
+					/*
+					we will need something like below to be able to alter
+					an rSquare's children after a move
+					*/
+					//rPiece.id = this.spaces[id].contents.id
 					rSquare.appendChild(rPiece)
 				}
 			}
@@ -252,7 +210,7 @@ class GameBoard {
 	}
 
 	updateBoard() {
-		
+					
 	}
 }
 
@@ -268,6 +226,7 @@ class Square {
 	}
 }
 
+// perhaps some kind of id is required? ex. 'R1w' 'Kb' 'N2w'
 class Piece {
 	constructor(position) {
 		this.pos = position
