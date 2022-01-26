@@ -279,6 +279,7 @@ chessBoard.renderBoard()
 console.log(chessBoard.spaces)
 
 let testMove = ["move", "pw5", "e2", "e4"]
+let testResponse = ["move", "pb5", "e7", "e5"]
 chessBoard.updateQueue.push(testMove)
 
 setTimeout(function() {
@@ -286,3 +287,8 @@ setTimeout(function() {
 	console.log(chessBoard.spaces)
 	console.log("These two dictionaries should not be the same at 'e4'")
 }, 3000);
+
+setTimeout(function() {
+	chessBoard.updateQueue.push(testResponse)
+	chessBoard.updateBoard()
+}, 5000);
