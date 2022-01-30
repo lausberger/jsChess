@@ -45,6 +45,7 @@ class GameBoard {
 		this.size = dimension
 		this.spaces = this.generateBoard()
 		this.pieces = this.generatePieces()
+		this.selected = "none"
 		// should this be a Stack for fast popping?
 		this.updateQueue = [] // could keep a list of rendering updates needed?
 		this.populateBoard()
@@ -113,6 +114,7 @@ class GameBoard {
 		return pieces
 	}
 
+	// NOTE what if this happened in the constructor of a Piece?
 	populateBoard() { // hard coded for 8x8 board
 		for (var name in this.pieces) {
 			let p = this.pieces[name]
@@ -121,24 +123,41 @@ class GameBoard {
 	}
 
 	// generate html elements from top to bottom
+	// NOTE This could also likely happen in the Piece constructor
 	renderBoard() {
-		var rBoard = document.getElementById('chessBoard')
+		let _self = this
+		let rBoard = document.getElementById('chessBoard')
 		for (var i = 8; i > 0; i--) {
-			var rRow = document.createElement('div')
+			let rRow = document.createElement('div')
 			rRow.className = 'row'
 			rRow.id = i 
 			for (var j in GameBoard.fileHelper[i]) {
-				let id = GameBoard.fileHelper[i][j]
-				var rSquare = document.createElement('div')
+				let coordinate = GameBoard.fileHelper[i][j]
+				let rSquare = document.createElement('div')
 				rSquare.className = 'square'
-				rSquare.id = id
-				rSquare.style.backgroundColor = this.spaces[id].color
+				rSquare.id = coordinate
+				rSquare.style.backgroundColor = _self.spaces[coordinate].color
+				// NOTE This is how movement is currently implemented
+				// will likely need to be changed when adding attacks
+				rSquare.onclick = function() {
+					if (_self.selected != "none") {
+						if (_self.selected.pos != rSquare.id) {
+							let update = ["move", _self.selected.id, _self.selected.pos, rSquare.id]
+							_self.updateQueue.push(update)
+							_self.updateBoard()
+						}
+					}
+				}
 				rRow.appendChild(rSquare)
-				if (this.spaces[id].contents != 'empty') {
-					var rPiece = document.createElement('img')
+				if (_self.spaces[coordinate].contents != 'empty') {
+					let rPiece = document.createElement('img')
 					rPiece.className = 'piece'
-					rPiece.src = this.spaces[id].contents.img
-					rPiece.id = this.spaces[id].contents.id
+					rPiece.src = _self.spaces[coordinate].contents.img
+					rPiece.id = _self.spaces[coordinate].contents.id
+					rPiece.style.opacity = 1
+					rPiece.onclick = function() {
+						_self.selected = _self.pieces[rPiece.id]
+					}
 					rSquare.appendChild(rPiece)
 				}
 			}
@@ -172,6 +191,7 @@ class GameBoard {
 			} else {
 				console.log("something has gone horribly wrong")
 			}
+			this.selected = "none"
 		}
 	}
 }
@@ -278,6 +298,8 @@ chessBoard.renderBoard()
 // has even been called?
 console.log(chessBoard.spaces)
 
+// for testing movement
+/*
 let testMove = ["move", "pw5", "e2", "e4"]
 let testResponse = ["move", "pb5", "e7", "e5"]
 chessBoard.updateQueue.push(testMove)
@@ -292,3 +314,4 @@ setTimeout(function() {
 	chessBoard.updateQueue.push(testResponse)
 	chessBoard.updateBoard()
 }, 5000);
+*/
