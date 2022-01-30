@@ -51,6 +51,23 @@ class GameBoard {
 		this.populateBoard()
 	}
 
+	// holder is mainly for debugging but could be expanded upon in future
+	select(piece) {
+		this.selected = piece
+		let holder = document.getElementById('holder')
+		let rPiece = document.getElementById(piece.id).cloneNode(true)
+		if (holder.firstChild) {
+			holder.removeChild(holder.firstChild)
+		}
+		holder.appendChild(rPiece)
+	}
+
+	deselect() {
+		this.selected = "none"
+		let holder = document.getElementById('holder')
+		holder.removeChild(holder.firstChild)
+	}
+
 	// #a3524e = burgundy
 	// #f2e8e7 = red-tinted white
 	generateBoard() {
@@ -156,7 +173,7 @@ class GameBoard {
 					rPiece.id = _self.spaces[coordinate].contents.id
 					rPiece.style.opacity = 1
 					rPiece.onclick = function() {
-						_self.selected = _self.pieces[rPiece.id]
+						_self.select(_self.pieces[rPiece.id])
 					}
 					rSquare.appendChild(rPiece)
 				}
@@ -189,9 +206,11 @@ class GameBoard {
 				rSrc.removeChild(rPiece)
 				rDst.appendChild(rPiece)
 			} else {
+				console.log(rSrc.contains(rPiece))
+				console.log(!rDst.hasChildNodes())
 				console.log("something has gone horribly wrong")
 			}
-			this.selected = "none"
+			this.deselect()
 		}
 	}
 }
