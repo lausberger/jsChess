@@ -31,3 +31,9 @@ class Move extends Update {
 
 	}
 }
+
+class Castle extends Update {
+	constructor() {
+		super()
+	}
+}

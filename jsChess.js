@@ -46,14 +46,47 @@ class GameBoard {
 		this.spaces = this.generateBoard()
 		this.pieces = this.generatePieces()
 		this.selected = "none"
-		// should this be a Stack for fast popping?
-		this.updateQueue = [] // could keep a list of rendering updates needed?
+		this.updateQueue = []
 		this.populateBoard()
+        this.renderBoard()
+        //GameBoard._instance = this // in case a singleton is desired
 	}
+
+    // take the selected piece and show its legal moves
+    // moves in blue, attacks in red
+    highlightSquares(piece) {
+        for (var action in piece.legalMoves) {
+            var squareElement = document.getElementById(action)
+            if (piece.legalMoves[action] == 'm') {
+                squareElement.style.backgroundColor = "#FDFF47"
+            } else if (piece.legalMoves[action] == 'a') {
+                squareElement.style.backgroundColor = "#FFFF28"
+            }
+        }
+    }
+
+    removeHighlights(piece) {
+        for (var action in piece.legalMoves) {
+            var squareElement = document.getElementById(action)
+            squareElement.style.backgroundColor = this.spaces[action].color
+        }
+    }
 
 	// holder is mainly for debugging but could be expanded upon in future
 	select(piece) {
+		// dehighlight the current selection
+        if (this.selected != 'none') {
+            this.removeHighlights(this.selected)
+        }
+        // allow deselection by clicking on already selected piece
+        if (this.selected == piece) {
+            this.deselect()
+            return
+        }
 		this.selected = piece
+		console.log(piece)
+    	piece.generateLegalMoves()
+        this.highlightSquares(piece)
 		let holder = document.getElementById('holder')
 		let rPiece = document.getElementById(piece.id).cloneNode(true)
 		if (holder.firstChild) {
@@ -63,6 +96,7 @@ class GameBoard {
 	}
 
 	deselect() {
+        this.removeHighlights(this.selected)
 		this.selected = "none"
 		let holder = document.getElementById('holder')
 		holder.removeChild(holder.firstChild)
@@ -143,42 +177,17 @@ class GameBoard {
 	// NOTE This could also likely happen in the Piece constructor
 	renderBoard() {
 		let _self = this
-		let rBoard = document.getElementById('chessBoard')
+		let boardElement = document.getElementById('chessBoard')
 		for (var i = 8; i > 0; i--) {
-			let rRow = document.createElement('div')
-			rRow.className = 'row'
-			rRow.id = i 
+			let rowElement = document.createElement('div')
+			rowElement.className = 'row'
+			rowElement.id = i 
 			for (var j in GameBoard.fileHelper[i]) {
-				let coordinate = GameBoard.fileHelper[i][j]
-				let rSquare = document.createElement('div')
-				rSquare.className = 'square'
-				rSquare.id = coordinate
-				rSquare.style.backgroundColor = _self.spaces[coordinate].color
-				// NOTE This is how movement is currently implemented
-				// will likely need to be changed when adding attacks
-				rSquare.onclick = function() {
-					if (_self.selected != "none") {
-						if (_self.selected.pos != rSquare.id) {
-							let update = ["move", _self.selected.id, _self.selected.pos, rSquare.id]
-							_self.updateQueue.push(update)
-							_self.updateBoard()
-						}
-					}
-				}
-				rRow.appendChild(rSquare)
-				if (_self.spaces[coordinate].contents != 'empty') {
-					let rPiece = document.createElement('img')
-					rPiece.className = 'piece'
-					rPiece.src = _self.spaces[coordinate].contents.img
-					rPiece.id = _self.spaces[coordinate].contents.id
-					rPiece.style.opacity = 1
-					rPiece.onclick = function() {
-						_self.select(_self.pieces[rPiece.id])
-					}
-					rSquare.appendChild(rPiece)
-				}
+				let coord = GameBoard.fileHelper[i][j]
+				let space = this.spaces[coord]
+				rowElement.appendChild(space.element)
 			}
-			rBoard.appendChild(rRow)
+			boardElement.appendChild(rowElement)
 		}
 	}
 
@@ -186,31 +195,13 @@ class GameBoard {
 		while (this.updateQueue.length) { // update queue is not empty
 			// not very efficient way of popping an element
 			let u = this.updateQueue.shift()
-
-			// string identifiers
 			let piece = u[1]
-			let src = u[2]
 			let dst = u[3]
-			
-			// HTML DOM objects
-			let rPiece = document.getElementById(piece)
-			let rSrc = document.getElementById(src)
-			let rDst = document.getElementById(dst)
-			console.log(u)
-			
-			// assume all updates are moves and are legal for now
-			if (rSrc.contains(rPiece) && !rDst.hasChildNodes()) {
-				this.spaces[src].contents = "empty"
-				this.spaces[dst].contents = this.pieces[piece]
-				this.pieces[piece].move(dst)
-				rSrc.removeChild(rPiece)
-				rDst.appendChild(rPiece)
-			} else {
-				console.log(rSrc.contains(rPiece))
-				console.log(!rDst.hasChildNodes())
-				console.log("something has gone horribly wrong")
+
+			// TODO: should legality check be here instead of in move?
+			if (this.pieces[piece].move(dst)) {
+				this.deselect()
 			}
-			this.deselect()
 		}
 	}
 }
@@ -220,10 +211,40 @@ class Square {
 		this.color = color
 		this.id = id
 		this.contents = 'empty'
+		this.element = document.createElement('div')
+		this.initializeElement()
 	}
 
+	initializeElement() {
+		this.element.className = 'square'
+		this.element.id = this.id
+		this.element.style.backgroundColor = this.color
+		this.element.onclick = function() {
+			if (chessBoard.selected != "none") {
+				if (chessBoard.selected.pos != this.id) {
+					// TODO: replace this with chessBoard.Update(update) or something
+					let update = ['move', chessBoard.selected.id, chessBoard.selected.pos, this.id]
+					chessBoard.updateQueue.push(update)
+					chessBoard.updateBoard()
+				}
+			}
+		}
+	}
+    
+    // TODO this is not being called by the move function, should it?
 	addPiece(piece) {
 		this.contents = piece
+		this.element.appendChild(piece.element)
+	}
+
+	// TODO: decide whether to remove piece argument and just use contents.element
+	removePiece(piece) {
+		if (this.contents != piece) {
+			throw new Error("Attempting to remove a piece that is not there! 301")
+		} else {
+			this.contents = "empty"
+			this.element.removeChild(piece.element)
+		}
 	}
 }
 
@@ -231,34 +252,220 @@ class Piece {
 	constructor(id, position) {
 		this.id = id
 		this.pos = position
+        this.legalMoves = {}
+		this.element = document.createElement('img')
+		this.initializeElement()
+	}
+
+	initializeElement() {
+		this.element.className = 'piece'
+		this.element.id = this.id
+		this.element.style.opacity = 1
+		let _this = this
+		this.element.onclick = function() {
+			if (chessBoard.selected != 'none') {
+				if (_this.isEnemyWith(chessBoard.selected)) {
+					// TODO: implement an actual attack
+					if (chessBoard.selected.checkIfLegal(chessBoard.spaces[_this.pos])) {
+						// what happens here?
+					}
+				} else {
+					chessBoard.select(_this)
+				}
+			} else {
+				chessBoard.select(_this)
+			}
+		}
 	}
 
 	move(position) {
-		this.pos = position
+		if (this.checkIfLegal(position)) {
+			console.log("legal")
+			let src = chessBoard.spaces[this.pos]
+			let dst = chessBoard.spaces[position]
+
+			if (this.legalMoves[position] == 'a') {
+                console.log("attacking!")
+				if (src.element.contains(this.element) && dst.element.hasChildNodes) {
+					dst.removePiece(dst.contents)
+					src.removePiece(this)
+					dst.addPiece(this)
+					this.pos = position
+					this.firstMove = false
+					return true
+				} else {
+					console.log("failure during attack")
+					console.log("\tassert source contains piece: " + src.element.contains(this.element))
+					console.log("\tassert dest contains enemy piece: " + dst.element.hasChildNodes() && dst.contents.isEnemyWith(this))
+				}
+                //TODO: add an attack function
+            } else if (this.legalMoves[position] == 'm') {
+                console.log("moving")
+				// TODO: maybe add easier way to access space element from a piece?
+
+				// TODO: we may be able to remove this check once core implementation is solid
+				if (src.element.contains(this.element) && !dst.element.hasChildNodes()) {
+					src.removePiece(this)
+					dst.addPiece(this)
+					this.pos = position
+					this.firstMove = false
+					return true
+				} else {
+					console.log("something has gone horribly wrong")
+					console.log("\tassert source contains piece: " + src.element.contains(this.element))
+					console.log("\tassert dest is empty: " + !dst.element.hasChildNodes())
+				}
+            } else {
+                throw new Error("Unknown action type in move for " + this)
+            }	
+		} else {
+            console.log("Illegal move attempted: " + this.id + " to " + position + " from " + this.pos)
+        }
+		return false // TODO: is it okay for move to return a success or failure indicator?
+    }
+
+    checkIfLegal(position) {
+        if (this.legalMoves[position]) {
+            return true
+        }
+        return false
+    }
+
+    generateLegalMoves() {
+        throw new Error("generic move generation function called")
+    }
+
+	isEnemyWith(otherPiece) {
+		if (this.id[1] != otherPiece.id[1]) {
+			return true
+		}
+		return false
 	}
+
 }
 
 class Pawn extends Piece {
 	constructor(id, position) {
 		super(id, position)
-		this.moveset = ['pawn moveset']
-		if (this.id.charAt(1) == 'w') {
+		this.firstMove = true
+		if (this.id[1] == 'w') {
 			this.img = 'pieces/plt60.png'
 		} else { // assumes color is 'b'
 			this.img = 'pieces/pdt60.png'
 		}
+		this.element.src = this.img
 	}
+
+    generateLegalMoves() {
+        // black pawns move down, white pawns move up
+        // TODO: if performance becomes an issue, check if piece has moved since last time
+        var direction = this.id[1] == 'w' ? 1 : -1
+        var newLegalMoves = {}
+
+        let atk1 = String.fromCharCode(this.pos.charCodeAt(0)+1) + String.fromCharCode(this.pos.charCodeAt(1)+direction)
+        let atk2 = String.fromCharCode(this.pos.charCodeAt(0)-1) + String.fromCharCode(this.pos.charCodeAt(1)+direction)
+        let mov = this.pos[0] + String.fromCharCode(this.pos.charCodeAt(1)+direction)
+		      
+		// pawns can move 2 spaces on their first turn
+		if (this.firstMove) {
+			let mov2 = this.pos[0] + String.fromCharCode(this.pos.charCodeAt(1)+2*direction)
+			if (chessBoard.spaces[mov2].contents == 'empty') {
+				newLegalMoves[mov2] = 'm'
+			}
+		}
+        
+        // first generate valid attacks
+        // if the position exists on the board
+        if (chessBoard.spaces[atk1]) {
+            // if said space is currently occupied
+            if (chessBoard.spaces[atk1].contents != 'empty') {
+                // and if it is occupied by an enemy piece
+				if (this.isEnemyWith(chessBoard.spaces[atk1].contents)) {
+                    newLegalMoves[atk1] = 'a'
+                }
+            }
+        }
+        if (chessBoard.spaces[atk2]) {
+            if (chessBoard.spaces[atk2].contents != 'empty') {
+				if (this.isEnemyWith(chessBoard.spaces[atk2].contents)) {
+                    newLegalMoves[atk2] = 'a'
+                }
+            }
+        }
+        // validate regular movement
+        // TODO: logic for when a pawn reaches the end
+        if (chessBoard.spaces[mov] && chessBoard.spaces[mov].contents == 'empty') {
+            newLegalMoves[mov] = 'm'
+        }
+
+        this.legalMoves = newLegalMoves
+    }
 }
 
 class Rook extends Piece {
 	constructor(id, position) {
 		super(id, position)
-		this.moveset = ['rook moveset']
 		if (this.id.charAt(1) == 'w') {
 			this.img = 'pieces/rlt60.png'
 		} else {
 			this.img = 'pieces/rdt60.png'
 		}
+		this.element.src = this.img
+	}
+
+	generateLegalMoves() {
+		var newLegalMoves = {}
+		var validDirs = [true, true, true, true]
+
+		for (var inc=1; inc<=8; inc++) {
+			let left = String.fromCharCode(this.pos.charCodeAt(0)-inc) + this.pos[1]
+			let right = String.fromCharCode(this.pos.charCodeAt(0)+inc) + this.pos[1] 
+			let up = this.pos[0] + String.fromCharCode(this.pos.charCodeAt(1)+inc)
+			let down = this.pos[0] + String.fromCharCode(this.pos.charCodeAt(1)-inc)
+
+			if (chessBoard.spaces[left] && validDirs[0]) {
+				if (chessBoard.spaces[left].contents != 'empty') {
+					if (this.isEnemyWith(chessBoard.spaces[left].contents)) {
+						newLegalMoves[left] = 'a'
+					}
+					validDirs[0] = false
+				} else {
+					newLegalMoves[left] = 'm'
+				}
+			}
+			if (chessBoard.spaces[right] && validDirs[1]) {
+				if (chessBoard.spaces[right].contents != 'empty') {
+					if (this.isEnemyWith(chessBoard.spaces[right].contents)) {
+						newLegalMoves[right] = 'a'
+					}
+					validDirs[1] = false
+				} else {
+					newLegalMoves[right] = 'm'
+				}
+			} 
+			if (chessBoard.spaces[up] && validDirs[2]) {
+				if (chessBoard.spaces[up].contents != 'empty') {
+					if (this.isEnemyWith(chessBoard.spaces[up].contents)) {
+						newLegalMoves[up] = 'a'
+					}
+					validDirs[2] = false
+				} else {
+					newLegalMoves[up] = 'm'
+				}
+			} 
+			if (chessBoard.spaces[down] && validDirs[3]) {
+				if (chessBoard.spaces[down].contents != 'empty') {
+					if (this.isEnemyWith(chessBoard.spaces[down].contents)) {
+						newLegalMoves[down] = 'a'
+					}
+					validDirs[3] = false
+				} else {
+					newLegalMoves[down] = 'm'
+				}
+			} 
+		}
+
+		this.legalMoves = newLegalMoves
 	}
 }
 
@@ -271,6 +478,36 @@ class Knight extends Piece {
 		} else {
 			this.img = 'pieces/ndt60.png'
 		}
+		this.element.src = this.img
+	}
+
+	generateLegalMoves() {
+		var newLegalMoves = {}
+		let up1 = String.fromCharCode(this.pos.charCodeAt(0)-1) + String.fromCharCode(this.pos.charCodeAt(1)+2)
+		let up2 = String.fromCharCode(this.pos.charCodeAt(0)+1) + String.fromCharCode(this.pos.charCodeAt(1)+2)
+		let down1 = String.fromCharCode(this.pos.charCodeAt(0)-1) + String.fromCharCode(this.pos.charCodeAt(1)-2)
+		let down2 = String.fromCharCode(this.pos.charCodeAt(0)+1) + String.fromCharCode(this.pos.charCodeAt(1)-2)
+		let left1 = String.fromCharCode(this.pos.charCodeAt(0)-2) + String.fromCharCode(this.pos.charCodeAt(1)+1)
+		let left2 = String.fromCharCode(this.pos.charCodeAt(0)-2) + String.fromCharCode(this.pos.charCodeAt(1)-1)
+		let right1 = String.fromCharCode(this.pos.charCodeAt(0)+2) + String.fromCharCode(this.pos.charCodeAt(1)+1)
+		let right2 = String.fromCharCode(this.pos.charCodeAt(0)+2) + String.fromCharCode(this.pos.charCodeAt(1)-1)
+		let possibleMoves = [up1, up2, down1, down2, left1, left2, right1, right2]
+
+		for (var i=0; i<possibleMoves.length; i++) {
+			let move = possibleMoves[i]
+			if (chessBoard.spaces[move]) {
+				if (chessBoard.spaces[move].contents != 'empty') {
+					if (this.isEnemyWith(chessBoard.spaces[move].contents)) {
+						newLegalMoves[move] = 'a'
+					}
+				} else {
+					newLegalMoves[move] = 'm'
+				}
+			}
+		}
+		console.log(newLegalMoves)
+		
+		this.legalMoves = newLegalMoves
 	}
 }
 
@@ -283,6 +520,62 @@ class Bishop extends Piece {
 		} else {
 			this.img = 'pieces/bdt60.png'
 		}
+		this.element.src = this.img
+	}
+
+	generateLegalMoves() {
+		var newLegalMoves = {}
+		var validDirs = [true, true, true, true]
+
+		for (var inc=1; inc<=8; inc++) {
+			let upleft = String.fromCharCode(this.pos.charCodeAt(0)-inc) + String.fromCharCode(this.pos.charCodeAt(1)+inc) 
+			let upright = String.fromCharCode(this.pos.charCodeAt(0)+inc) + String.fromCharCode(this.pos.charCodeAt(1)+inc) 
+			let downleft = String.fromCharCode(this.pos.charCodeAt(0)-inc) + String.fromCharCode(this.pos.charCodeAt(1)-inc) 
+			let downright = String.fromCharCode(this.pos.charCodeAt(0)+inc) + String.fromCharCode(this.pos.charCodeAt(1)-inc) 
+
+			if (chessBoard.spaces[upleft] && validDirs[0]) {
+				if (chessBoard.spaces[upleft].contents != 'empty') {
+					if (this.isEnemyWith(chessBoard.spaces[upleft].contents)) {
+						newLegalMoves[upleft] = 'a'
+					}
+					validDirs[0] = false
+				} else {
+					newLegalMoves[upleft] = 'm'
+				}
+			}
+			if (chessBoard.spaces[upright] && validDirs[1]) {
+				if (chessBoard.spaces[upright].contents != 'empty') {
+					if (this.isEnemyWith(chessBoard.spaces[upright].contents)) {
+						newLegalMoves[upright] = 'a'
+					}
+					validDirs[1] = false
+				} else {
+					newLegalMoves[upright] = 'm'
+				}
+			} 
+			if (chessBoard.spaces[downleft] && validDirs[2]) {
+				if (chessBoard.spaces[downleft].contents != 'empty') {
+					if (this.isEnemyWith(chessBoard.spaces[downleft].contents)) {
+						newLegalMoves[downleft] = 'a'
+					}
+					validDirs[2] = false
+				} else {
+					newLegalMoves[downleft] = 'm'
+				}
+			} 
+			if (chessBoard.spaces[downright] && validDirs[3]) {
+				if (chessBoard.spaces[downright].contents != 'empty') {
+					if (this.isEnemyWith(chessBoard.spaces[downright].contents)) {
+						newLegalMoves[downright] = 'a'
+					}
+					validDirs[3] = false
+				} else {
+					newLegalMoves[downright] = 'm'
+				}
+			}
+		}
+
+		this.legalMoves = newLegalMoves
 	}
 }
 
@@ -295,6 +588,106 @@ class Queen extends Piece {
 		} else {
 			this.img = 'pieces/qdt60.png'
 		}
+		this.element.src = this.img
+	}
+
+	generateLegalMoves() {
+		var newLegalMoves = {}
+		var validDirs = [true, true, true, true, true, true, true, true]
+		
+		for (var inc=1; inc<=8; inc++) {
+			let upleft = String.fromCharCode(this.pos.charCodeAt(0)-inc) + String.fromCharCode(this.pos.charCodeAt(1)+inc) 
+			let upright = String.fromCharCode(this.pos.charCodeAt(0)+inc) + String.fromCharCode(this.pos.charCodeAt(1)+inc) 
+			let downleft = String.fromCharCode(this.pos.charCodeAt(0)-inc) + String.fromCharCode(this.pos.charCodeAt(1)-inc) 
+			let downright = String.fromCharCode(this.pos.charCodeAt(0)+inc) + String.fromCharCode(this.pos.charCodeAt(1)-inc) 
+			let left = String.fromCharCode(this.pos.charCodeAt(0)-inc) + this.pos[1]
+			let right = String.fromCharCode(this.pos.charCodeAt(0)+inc) + this.pos[1] 
+			let up = this.pos[0] + String.fromCharCode(this.pos.charCodeAt(1)+inc)
+			let down = this.pos[0] + String.fromCharCode(this.pos.charCodeAt(1)-inc)
+
+			if (chessBoard.spaces[upleft] && validDirs[0]) {
+				if (chessBoard.spaces[upleft].contents != 'empty') {
+					if (this.isEnemyWith(chessBoard.spaces[upleft].contents)) {
+						newLegalMoves[upleft] = 'a'
+					}
+					validDirs[0] = false
+				} else {
+					newLegalMoves[upleft] = 'm'
+				}
+			}
+			if (chessBoard.spaces[upright] && validDirs[1]) {
+				if (chessBoard.spaces[upright].contents != 'empty') {
+					if (this.isEnemyWith(chessBoard.spaces[upright].contents)) {
+						newLegalMoves[upright] = 'a'
+					}
+					validDirs[1] = false
+				} else {
+					newLegalMoves[upright] = 'm'
+				}
+			} 
+			if (chessBoard.spaces[downleft] && validDirs[2]) {
+				if (chessBoard.spaces[downleft].contents != 'empty') {
+					if (this.isEnemyWith(chessBoard.spaces[downleft].contents)) {
+						newLegalMoves[downleft] = 'a'
+					}
+					validDirs[2] = false
+				} else {
+					newLegalMoves[downleft] = 'm'
+				}
+			} 
+			if (chessBoard.spaces[downright] && validDirs[3]) {
+				if (chessBoard.spaces[downright].contents != 'empty') {
+					if (this.isEnemyWith(chessBoard.spaces[downright].contents)) {
+						newLegalMoves[downright] = 'a'
+					}
+					validDirs[3] = false
+				} else {
+					newLegalMoves[downright] = 'm'
+				}
+			}			
+			if (chessBoard.spaces[left] && validDirs[4]) {
+				if (chessBoard.spaces[left].contents != 'empty') {
+					if (this.isEnemyWith(chessBoard.spaces[left].contents)) {
+						newLegalMoves[left] = 'a'
+					}
+					validDirs[4] = false
+				} else {
+					newLegalMoves[left] = 'm'
+				}
+			}
+			if (chessBoard.spaces[right] && validDirs[5]) {
+				if (chessBoard.spaces[right].contents != 'empty') {
+					if (this.isEnemyWith(chessBoard.spaces[right].contents)) {
+						newLegalMoves[right] = 'a'
+					}
+					validDirs[5] = false
+				} else {
+					newLegalMoves[right] = 'm'
+				}
+			} 
+			if (chessBoard.spaces[up] && validDirs[6]) {
+				if (chessBoard.spaces[up].contents != 'empty') {
+					if (this.isEnemyWith(chessBoard.spaces[up].contents)) {
+						newLegalMoves[up] = 'a'
+					}
+					validDirs[6] = false
+				} else {
+					newLegalMoves[up] = 'm'
+				}
+			} 
+			if (chessBoard.spaces[down] && validDirs[7]) {
+				if (chessBoard.spaces[down].contents != 'empty') {
+					if (this.isEnemyWith(chessBoard.spaces[down].contents)) {
+						newLegalMoves[down] = 'a'
+					}
+					validDirs[7] = false
+				} else {
+					newLegalMoves[down] = 'm'
+				}
+			} 
+		}
+
+		this.legalMoves = newLegalMoves
 	}
 }
 
@@ -307,22 +700,42 @@ class King extends Piece {
 		} else {
 			this.img = 'pieces/kdt60.png'
 		}
+		this.element.src = this.img
+	}
+
+	generateLegalMoves() {
+		var newLegalMoves = {}
+		let upleft = String.fromCharCode(this.pos.charCodeAt(0)-1) + String.fromCharCode(this.pos.charCodeAt(1)+1) 
+		let upright = String.fromCharCode(this.pos.charCodeAt(0)+1) + String.fromCharCode(this.pos.charCodeAt(1)+1) 
+		let downleft = String.fromCharCode(this.pos.charCodeAt(0)-1) + String.fromCharCode(this.pos.charCodeAt(1)-1) 
+		let downright = String.fromCharCode(this.pos.charCodeAt(0)+1) + String.fromCharCode(this.pos.charCodeAt(1)-1) 
+		let left = String.fromCharCode(this.pos.charCodeAt(0)-1) + this.pos[1]
+		let right = String.fromCharCode(this.pos.charCodeAt(0)+1) + this.pos[1] 
+		let up = this.pos[0] + String.fromCharCode(this.pos.charCodeAt(1)+1)
+		let down = this.pos[0] + String.fromCharCode(this.pos.charCodeAt(1)-1)
+		let possibleMoves = [upleft, upright, downleft, downright, left, right, up, down]
+
+		for (var i=0; i<possibleMoves.length; i++) {
+			let move = possibleMoves[i]
+			if (chessBoard.spaces[move]) {
+				if (chessBoard.spaces[move].contents != 'empty') {
+					if (this.isEnemyWith(chessBoard.spaces[move].contents)) {
+						newLegalMoves[move] = 'a'
+					}
+				} else {
+					newLegalMoves[move] = 'm'
+				}
+			}
+		}
+
+		this.legalMoves = newLegalMoves
 	}
 }
 
 const chessBoard = new GameBoard()
-chessBoard.renderBoard()
+console.log(chessBoard)
 
-// Check Square 'e4'. Why does it have a pawn before updateBoard
-// has even been called?
-console.log(chessBoard.spaces)
-
-// for testing movement
 /*
-let testMove = ["move", "pw5", "e2", "e4"]
-let testResponse = ["move", "pb5", "e7", "e5"]
-chessBoard.updateQueue.push(testMove)
-
 setTimeout(function() {
 	chessBoard.updateBoard()
 	console.log(chessBoard.spaces)
