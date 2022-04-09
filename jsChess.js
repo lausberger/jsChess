@@ -1,3 +1,7 @@
+class Chess {
+
+}
+
 class GameBoard {
 	static positions = [
 		['a8', 'b8', 'c8', 'd8', 'e8', 'f8', 'g8', 'h8'],
@@ -55,33 +59,44 @@ class GameBoard {
     // take the selected piece and show its legal moves
     // moves in blue, attacks in red
     highlightSquares(piece) {
-        for (var action in piece.legalMoves) {
-            var squareElement = document.getElementById(action)
-            if (piece.legalMoves[action] == 'm') {
+        for (var square in piece.legalMoves) {
+            this.spaces[square].addHighlight() // TODO: make this work
+            //var squareElement = document.getElementById(square)
+            //squareElement.style.backgroundColor = "#FDFF47"
+            /*
+            if (piece.legalMoves[square] == 'm') {
                 squareElement.style.backgroundColor = "#FDFF47"
-            } else if (piece.legalMoves[action] == 'a') {
+            } else if (piece.legalMoves[square] == 'a') {
                 squareElement.style.backgroundColor = "#FFFF28"
             }
+            */
         }
     }
 
     removeHighlights(piece) {
-        for (var action in piece.legalMoves) {
-            var squareElement = document.getElementById(action)
-            squareElement.style.backgroundColor = this.spaces[action].color
+        console.log("removing highlights")
+        for (var square in piece.legalMoves) {
+            //var squareElement = document.getElementById(square)
+            //squareElement.style.backgroundColor = this.spaces[square].color
+            this.spaces[square].removeHighlight()
         }
     }
 
 	// holder is mainly for debugging but could be expanded upon in future
 	select(piece) {
-		// dehighlight the current selection
-        if (this.selected != 'none') {
-            this.removeHighlights(this.selected)
-        }
-        // allow deselection by clicking on already selected piece
+        // deselect when clicking already selected piece
         if (this.selected == piece) {
             this.deselect()
             return
+        // otherwise, determine whether we're reselecting or attacking
+        } else if (this.selected != 'none') {
+            // do nothing if we're attacking
+            if (this.selected.isEnemyWith(piece)) {
+                return
+            // else, deselect and continue with selection process
+            } else {
+                this.deselect()
+            }
         }
 		this.selected = piece
 		console.log(piece)
@@ -230,6 +245,34 @@ class Square {
 			}
 		}
 	}
+
+    addHighlight() { // TODO: make this useful
+		/*
+        console.log("applying highlight to " + this.id)
+        let highlight = document.createElement('div')
+        highlight.className = 'highlight'
+        highlight.id = 'hl'
+        //this.element.appendChild(highlight)
+		if (this.element.hasChildNodes()) {
+			this.element.insertBefore(highlight, this.element.firstChild)
+		} else {
+			this.element.appendChild(highlight)
+		}
+		*/
+		this.element.style.backgroundColor = "#FDFF47"
+    }
+
+    removeHighlight() {
+		/*
+        if (this.element.querySelector('#hl')) {
+            let hl = this.element.childNodes.item('hl')
+            this.element.removeChild(hl)
+        } else {
+            throw new Error("Attempting to remove highlight that is not there")
+        }
+		*/
+		this.element.style.backgroundColor = this.color
+    }
     
     // TODO this is not being called by the move function, should it?
 	addPiece(piece) {
@@ -237,15 +280,45 @@ class Square {
 		this.element.appendChild(piece.element)
 	}
 
-	// TODO: decide whether to remove piece argument and just use contents.element
+	// TODO: decide whether to remove piece argument and just use contents
 	removePiece(piece) {
-		if (this.contents != piece) {
-			throw new Error("Attempting to remove a piece that is not there! 301")
+        if (!this.hasPiece(piece)) {
+		//if (this.contents != piece) {
+			throw new Error("Attempting to remove a piece that is not there!")
 		} else {
 			this.contents = "empty"
 			this.element.removeChild(piece.element)
 		}
 	}
+
+    hasPiece(piece) {
+        let containsPiece = this.contents == piece
+        let elementContains = this.element.contains(piece.element)
+        if (containsPiece && elementContains) {
+            return true
+        } else {
+            console.log("Error in " + this.id + " contains check")
+            console.log("\tContains piece object: " + containsPiece)
+            console.log("\tElement contains piece element: " + elementContains)
+            return false
+        }
+    }
+
+    isEmpty() {
+        let contentsEmpty = this.contents == 'empty'
+        // an empty square either has no children, or only a highlight
+        let elementEmpty = !this.element.hasChildNodes() || this.element.querySelector('#hl')
+        if (contentsEmpty && elementEmpty) {
+            return true
+        } else {
+            /*
+            console.log("Error in " + this.id + " empty check")
+            console.log("\tContents are empty: " + contentsEmpty)
+            console.log("\tElement is empty: " + elementEmpty)
+            */
+            return false
+        }
+    }
 }
 
 class Piece {
@@ -263,30 +336,35 @@ class Piece {
 		this.element.style.opacity = 1
 		let _this = this
 		this.element.onclick = function() {
-			if (chessBoard.selected != 'none') {
-				if (_this.isEnemyWith(chessBoard.selected)) {
-					// TODO: implement an actual attack
-					if (chessBoard.selected.checkIfLegal(chessBoard.spaces[_this.pos])) {
-						// what happens here?
-					}
-				} else {
-					chessBoard.select(_this)
-				}
+            // deselect on reclick
+            /*
+            if (chessBoard.selected == _this) {
+                chessBoard.deselect()
+			} else 
+            */
+            chessBoard.select(_this)
+            /*
+            if (chessBoard.selected != 'none') {
+                // don't try to select enemy piece when attacking
+				if (!_this.isEnemyWith(chessBoard.selected)) {
+                    chessBoard.select(_this)
+				} 
 			} else {
 				chessBoard.select(_this)
 			}
+            */
 		}
 	}
 
 	move(position) {
 		if (this.checkIfLegal(position)) {
-			console.log("legal")
 			let src = chessBoard.spaces[this.pos]
 			let dst = chessBoard.spaces[position]
 
 			if (this.legalMoves[position] == 'a') {
                 console.log("attacking!")
-				if (src.element.contains(this.element) && dst.element.hasChildNodes) {
+                if (src.hasPiece(this) && !dst.isEmpty()) {
+                //if (src.contents == this && dst.contents != 'empty') {
 					dst.removePiece(dst.contents)
 					src.removePiece(this)
 					dst.addPiece(this)
@@ -295,16 +373,14 @@ class Piece {
 					return true
 				} else {
 					console.log("failure during attack")
-					console.log("\tassert source contains piece: " + src.element.contains(this.element))
-					console.log("\tassert dest contains enemy piece: " + dst.element.hasChildNodes() && dst.contents.isEnemyWith(this))
+                    console.log("src has piece: " + src.hasPiece(this))
+                    console.log("dst is not empty: " + !dst.isEmpty())
 				}
                 //TODO: add an attack function
             } else if (this.legalMoves[position] == 'm') {
                 console.log("moving")
-				// TODO: maybe add easier way to access space element from a piece?
-
-				// TODO: we may be able to remove this check once core implementation is solid
-				if (src.element.contains(this.element) && !dst.element.hasChildNodes()) {
+                //if (src.contents == this && dst.contents == 'empty') {
+                if (src.hasPiece(this) && dst.isEmpty()) {
 					src.removePiece(this)
 					dst.addPiece(this)
 					this.pos = position
@@ -312,8 +388,8 @@ class Piece {
 					return true
 				} else {
 					console.log("something has gone horribly wrong")
-					console.log("\tassert source contains piece: " + src.element.contains(this.element))
-					console.log("\tassert dest is empty: " + !dst.element.hasChildNodes())
+					console.log("src has piece: " + src.hasPiece(this))
+					console.log("dst is empty: " + dst.isEmpty())
 				}
             } else {
                 throw new Error("Unknown action type in move for " + this)
@@ -321,7 +397,7 @@ class Piece {
 		} else {
             console.log("Illegal move attempted: " + this.id + " to " + position + " from " + this.pos)
         }
-		return false // TODO: is it okay for move to return a success or failure indicator?
+		return false
     }
 
     checkIfLegal(position) {
@@ -356,6 +432,15 @@ class Pawn extends Piece {
 		this.element.src = this.img
 	}
 
+    /* TODO: limit firstMove logic to Pawn class
+    move(position) {
+        if (super.move(position) == true) {
+            console.log("it works")
+            this.firstMove = false
+        }
+    }
+    */
+
     generateLegalMoves() {
         // black pawns move down, white pawns move up
         // TODO: if performance becomes an issue, check if piece has moved since last time
@@ -366,19 +451,13 @@ class Pawn extends Piece {
         let atk2 = String.fromCharCode(this.pos.charCodeAt(0)-1) + String.fromCharCode(this.pos.charCodeAt(1)+direction)
         let mov = this.pos[0] + String.fromCharCode(this.pos.charCodeAt(1)+direction)
 		      
-		// pawns can move 2 spaces on their first turn
-		if (this.firstMove) {
-			let mov2 = this.pos[0] + String.fromCharCode(this.pos.charCodeAt(1)+2*direction)
-			if (chessBoard.spaces[mov2].contents == 'empty') {
-				newLegalMoves[mov2] = 'm'
-			}
-		}
         
         // first generate valid attacks
         // if the position exists on the board
         if (chessBoard.spaces[atk1]) {
             // if said space is currently occupied
-            if (chessBoard.spaces[atk1].contents != 'empty') {
+            if (!chessBoard.spaces[atk1].isEmpty()) {
+            //if (chessBoard.spaces[atk1].contents != 'empty') {
                 // and if it is occupied by an enemy piece
 				if (this.isEnemyWith(chessBoard.spaces[atk1].contents)) {
                     newLegalMoves[atk1] = 'a'
@@ -386,7 +465,8 @@ class Pawn extends Piece {
             }
         }
         if (chessBoard.spaces[atk2]) {
-            if (chessBoard.spaces[atk2].contents != 'empty') {
+            if (!chessBoard.spaces[atk2].isEmpty()) {
+            //if (chessBoard.spaces[atk2].contents != 'empty') {
 				if (this.isEnemyWith(chessBoard.spaces[atk2].contents)) {
                     newLegalMoves[atk2] = 'a'
                 }
@@ -394,8 +474,19 @@ class Pawn extends Piece {
         }
         // validate regular movement
         // TODO: logic for when a pawn reaches the end
-        if (chessBoard.spaces[mov] && chessBoard.spaces[mov].contents == 'empty') {
-            newLegalMoves[mov] = 'm'
+        //if (chessBoard.spaces[mov] && chessBoard.spaces[mov].contents == 'empty') {
+        if (chessBoard.spaces[mov]) { 
+            if (chessBoard.spaces[mov].isEmpty()) {
+                newLegalMoves[mov] = 'm'
+                // pawns can move 2 spaces on their first turn
+                if (this.firstMove) {
+                    let mov2 = this.pos[0] + String.fromCharCode(this.pos.charCodeAt(1)+2*direction)
+                    //if (chessBoard.spaces[mov2].contents == 'empty') {
+                    if (chessBoard.spaces[mov2].isEmpty()) {
+                        newLegalMoves[mov2] = 'm'
+                    }
+                }
+            }
         }
 
         this.legalMoves = newLegalMoves
@@ -424,7 +515,8 @@ class Rook extends Piece {
 			let down = this.pos[0] + String.fromCharCode(this.pos.charCodeAt(1)-inc)
 
 			if (chessBoard.spaces[left] && validDirs[0]) {
-				if (chessBoard.spaces[left].contents != 'empty') {
+                if (!chessBoard.spaces[left].isEmpty()) {
+				//if (chessBoard.spaces[left].contents != 'empty') {
 					if (this.isEnemyWith(chessBoard.spaces[left].contents)) {
 						newLegalMoves[left] = 'a'
 					}
@@ -434,7 +526,8 @@ class Rook extends Piece {
 				}
 			}
 			if (chessBoard.spaces[right] && validDirs[1]) {
-				if (chessBoard.spaces[right].contents != 'empty') {
+                if (!chessBoard.spaces[right].isEmpty()) {
+				//if (chessBoard.spaces[right].contents != 'empty') {
 					if (this.isEnemyWith(chessBoard.spaces[right].contents)) {
 						newLegalMoves[right] = 'a'
 					}
@@ -444,7 +537,8 @@ class Rook extends Piece {
 				}
 			} 
 			if (chessBoard.spaces[up] && validDirs[2]) {
-				if (chessBoard.spaces[up].contents != 'empty') {
+                if (!chessBoard.spaces[up].isEmpty()) {
+				//if (chessBoard.spaces[up].contents != 'empty') {
 					if (this.isEnemyWith(chessBoard.spaces[up].contents)) {
 						newLegalMoves[up] = 'a'
 					}
@@ -454,7 +548,8 @@ class Rook extends Piece {
 				}
 			} 
 			if (chessBoard.spaces[down] && validDirs[3]) {
-				if (chessBoard.spaces[down].contents != 'empty') {
+                if (!chessBoard.spaces[down].isEmpty()) {
+				//if (chessBoard.spaces[down].contents != 'empty') {
 					if (this.isEnemyWith(chessBoard.spaces[down].contents)) {
 						newLegalMoves[down] = 'a'
 					}
@@ -496,7 +591,8 @@ class Knight extends Piece {
 		for (var i=0; i<possibleMoves.length; i++) {
 			let move = possibleMoves[i]
 			if (chessBoard.spaces[move]) {
-				if (chessBoard.spaces[move].contents != 'empty') {
+                if (!chessBoard.spaces[move].isEmpty()) {
+				//if (chessBoard.spaces[move].contents != 'empty') {
 					if (this.isEnemyWith(chessBoard.spaces[move].contents)) {
 						newLegalMoves[move] = 'a'
 					}
@@ -534,7 +630,8 @@ class Bishop extends Piece {
 			let downright = String.fromCharCode(this.pos.charCodeAt(0)+inc) + String.fromCharCode(this.pos.charCodeAt(1)-inc) 
 
 			if (chessBoard.spaces[upleft] && validDirs[0]) {
-				if (chessBoard.spaces[upleft].contents != 'empty') {
+                if (!chessBoard.spaces[upleft].isEmpty()) {
+				//if (chessBoard.spaces[upleft].contents != 'empty') {
 					if (this.isEnemyWith(chessBoard.spaces[upleft].contents)) {
 						newLegalMoves[upleft] = 'a'
 					}
@@ -544,7 +641,8 @@ class Bishop extends Piece {
 				}
 			}
 			if (chessBoard.spaces[upright] && validDirs[1]) {
-				if (chessBoard.spaces[upright].contents != 'empty') {
+                if (!chessBoard.spaces[upright].isEmpty()) {
+				//if (chessBoard.spaces[upright].contents != 'empty') {
 					if (this.isEnemyWith(chessBoard.spaces[upright].contents)) {
 						newLegalMoves[upright] = 'a'
 					}
@@ -554,7 +652,8 @@ class Bishop extends Piece {
 				}
 			} 
 			if (chessBoard.spaces[downleft] && validDirs[2]) {
-				if (chessBoard.spaces[downleft].contents != 'empty') {
+                if (!chessBoard.spaces[downleft].isEmpty()) {
+				//if (chessBoard.spaces[downleft].contents != 'empty') {
 					if (this.isEnemyWith(chessBoard.spaces[downleft].contents)) {
 						newLegalMoves[downleft] = 'a'
 					}
@@ -564,7 +663,8 @@ class Bishop extends Piece {
 				}
 			} 
 			if (chessBoard.spaces[downright] && validDirs[3]) {
-				if (chessBoard.spaces[downright].contents != 'empty') {
+                if (!chessBoard.spaces[downright].isEmpty()) {
+				//if (chessBoard.spaces[downright].contents != 'empty') {
 					if (this.isEnemyWith(chessBoard.spaces[downright].contents)) {
 						newLegalMoves[downright] = 'a'
 					}
@@ -606,7 +706,8 @@ class Queen extends Piece {
 			let down = this.pos[0] + String.fromCharCode(this.pos.charCodeAt(1)-inc)
 
 			if (chessBoard.spaces[upleft] && validDirs[0]) {
-				if (chessBoard.spaces[upleft].contents != 'empty') {
+                if (!chessBoard.spaces[upleft].isEmpty()) {
+				//if (chessBoard.spaces[upleft].contents != 'empty') {
 					if (this.isEnemyWith(chessBoard.spaces[upleft].contents)) {
 						newLegalMoves[upleft] = 'a'
 					}
@@ -616,7 +717,8 @@ class Queen extends Piece {
 				}
 			}
 			if (chessBoard.spaces[upright] && validDirs[1]) {
-				if (chessBoard.spaces[upright].contents != 'empty') {
+                if (!chessBoard.spaces[upright].isEmpty()) {
+				//if (chessBoard.spaces[upright].contents != 'empty') {
 					if (this.isEnemyWith(chessBoard.spaces[upright].contents)) {
 						newLegalMoves[upright] = 'a'
 					}
@@ -626,7 +728,8 @@ class Queen extends Piece {
 				}
 			} 
 			if (chessBoard.spaces[downleft] && validDirs[2]) {
-				if (chessBoard.spaces[downleft].contents != 'empty') {
+                if (!chessBoard.spaces[downleft].isEmpty()) {
+				//if (chessBoard.spaces[downleft].contents != 'empty') {
 					if (this.isEnemyWith(chessBoard.spaces[downleft].contents)) {
 						newLegalMoves[downleft] = 'a'
 					}
@@ -636,7 +739,8 @@ class Queen extends Piece {
 				}
 			} 
 			if (chessBoard.spaces[downright] && validDirs[3]) {
-				if (chessBoard.spaces[downright].contents != 'empty') {
+                if (!chessBoard.spaces[downright].isEmpty()) {
+				//if (chessBoard.spaces[downright].contents != 'empty') {
 					if (this.isEnemyWith(chessBoard.spaces[downright].contents)) {
 						newLegalMoves[downright] = 'a'
 					}
@@ -646,7 +750,8 @@ class Queen extends Piece {
 				}
 			}			
 			if (chessBoard.spaces[left] && validDirs[4]) {
-				if (chessBoard.spaces[left].contents != 'empty') {
+                if (!chessBoard.spaces[left].isEmpty()) {
+				//if (chessBoard.spaces[left].contents != 'empty') {
 					if (this.isEnemyWith(chessBoard.spaces[left].contents)) {
 						newLegalMoves[left] = 'a'
 					}
@@ -656,7 +761,8 @@ class Queen extends Piece {
 				}
 			}
 			if (chessBoard.spaces[right] && validDirs[5]) {
-				if (chessBoard.spaces[right].contents != 'empty') {
+                if (!chessBoard.spaces[right].isEmpty()) {
+				//if (chessBoard.spaces[right].contents != 'empty') {
 					if (this.isEnemyWith(chessBoard.spaces[right].contents)) {
 						newLegalMoves[right] = 'a'
 					}
@@ -666,7 +772,8 @@ class Queen extends Piece {
 				}
 			} 
 			if (chessBoard.spaces[up] && validDirs[6]) {
-				if (chessBoard.spaces[up].contents != 'empty') {
+                if (!chessBoard.spaces[up].isEmpty()) {
+				//if (chessBoard.spaces[up].contents != 'empty') {
 					if (this.isEnemyWith(chessBoard.spaces[up].contents)) {
 						newLegalMoves[up] = 'a'
 					}
@@ -676,7 +783,8 @@ class Queen extends Piece {
 				}
 			} 
 			if (chessBoard.spaces[down] && validDirs[7]) {
-				if (chessBoard.spaces[down].contents != 'empty') {
+                if (!chessBoard.spaces[down].isEmpty()) {
+				//if (chessBoard.spaces[down].contents != 'empty') {
 					if (this.isEnemyWith(chessBoard.spaces[down].contents)) {
 						newLegalMoves[down] = 'a'
 					}
@@ -718,7 +826,8 @@ class King extends Piece {
 		for (var i=0; i<possibleMoves.length; i++) {
 			let move = possibleMoves[i]
 			if (chessBoard.spaces[move]) {
-				if (chessBoard.spaces[move].contents != 'empty') {
+                if (!chessBoard.spaces[move].isEmpty()) {
+				//if (chessBoard.spaces[move].contents != 'empty') {
 					if (this.isEnemyWith(chessBoard.spaces[move].contents)) {
 						newLegalMoves[move] = 'a'
 					}
@@ -734,16 +843,3 @@ class King extends Piece {
 
 const chessBoard = new GameBoard()
 console.log(chessBoard)
-
-/*
-setTimeout(function() {
-	chessBoard.updateBoard()
-	console.log(chessBoard.spaces)
-	console.log("These two dictionaries should not be the same at 'e4'")
-}, 3000);
-
-setTimeout(function() {
-	chessBoard.updateQueue.push(testResponse)
-	chessBoard.updateBoard()
-}, 5000);
-*/

@@ -29,7 +29,16 @@
 			height: 50px;
 			display: inline-block;
 			margin: 0px;
+            position: relative;
 		}
+
+        .highlight {
+            background-color: #0000FF;
+            width: 100%;
+            height: 100%;
+            opacity: 0.7;
+            position: absolute;
+        }
 
 		.piece {
 			width: 50px;
@@ -37,14 +46,11 @@
 			display: inline-block;
 			margin: 0px;
 		}
-
 	</style>
 </head>
 <body>
-	<div id='chessBoard'>
-	</div>
-	<div id='holder'>
-	</div>
+	<div id='chessBoard'></div>
+	<div id='holder'></div>
 	<script src='jsChess.js'></script>
 </body>
 </html>
