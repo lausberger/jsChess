@@ -1,5 +1,5 @@
 # jsChess
-Created by Lucas Ausberger and Brandon Egger
+Created by Lucas Ausberger
 
 
 Chess!
