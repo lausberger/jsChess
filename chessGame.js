@@ -52,6 +52,53 @@ class Utils {
 		7: ['a7', 'b7', 'c7', 'd7', 'e7', 'f7', 'g7', 'h7'],
 		8: ['a8', 'b8', 'c8', 'd8', 'e8', 'f8', 'g8', 'h8']
 	}
+
+    // can find the next space in a given direction
+    // TODO: add logic to return false if output is not a real space
+    static PositionIncrementer = {
+        'up': (pos) => { return pos[0] + String.fromCharCode(pos.charCodeAt(1)+1) },
+
+        'upright': (pos) => { return String.fromCharCode(pos.charCodeAt(0)+1) + String.fromCharCode(pos.charCodeAt(1)+1) },
+
+        'right': (pos) => { return String.fromCharCode(pos.charCodeAt(0)+1) + pos[1] },
+        'downright': (pos) =>  { return String.fromCharCode(pos.charCodeAt(0)+1) + String.fromCharCode(pos.charCodeAt(1)-1) },
+
+        'down': (pos) => { return pos[0] + String.fromCharCode(pos.charCodeAt(1)-1) },
+
+        'downleft': (pos) => { return String.fromCharCode(pos.charCodeAt(0)-1) + String.fromCharCode(pos.charCodeAt(1)-1) },
+
+        'left': (pos) => { return String.fromCharCode(pos.charCodeAt(0)-1) + pos[1] },
+
+        'upleft': (pos) => { return String.fromCharCode(pos.charCodeAt(0)-1) + String.fromCharCode(pos.charCodeAt(1)+1) }
+    }
+
+    static isValidSpace(pos) {
+        let row = pos[0]
+        let file = parseInt(pos[1])
+        return (row in Utils.RowTable && file in Utils.ColumnTable)
+    }
+
+    // returns a list of all position a knight could attack pos from
+    static getKnightCircle(pos) {
+        let ur = String.fromCharCode(pos.charCodeAt(0)+1) + String.fromCharCode(pos.charCodeAt(1)+2) 
+        let ul = String.fromCharCode(pos.charCodeAt(0)-1) + String.fromCharCode(pos.charCodeAt(1)+2)
+        let ru = String.fromCharCode(pos.charCodeAt(0)+2) + String.fromCharCode(pos.charCodeAt(1)+1)
+        let rd = String.fromCharCode(pos.charCodeAt(0)+2) + String.fromCharCode(pos.charCodeAt(1)-1)
+        let dr = String.fromCharCode(pos.charCodeAt(0)+1) + String.fromCharCode(pos.charCodeAt(1)-2)
+        let dl = String.fromCharCode(pos.charCodeAt(0)-1) + String.fromCharCode(pos.charCodeAt(1)-2)
+        let lu = String.fromCharCode(pos.charCodeAt(0)-2) + String.fromCharCode(pos.charCodeAt(1)+1)
+        let ld = String.fromCharCode(pos.charCodeAt(0)-2) + String.fromCharCode(pos.charCodeAt(1)-1)
+        var circle = [ur, ul, ru, rd, dr, dl, lu, ld]
+        var res = []
+        // TODO: functional implementation that prunes circle
+        for (var i=0; i<circle.length; i++) {
+            var cur = circle[i]
+            if (Utils.isValidSpace(cur)) {
+                res.push(cur)
+            }
+        }
+        return res 
+    }
 }
 
 // creates the ChessBoard object and corresponding html element
@@ -60,8 +107,8 @@ class ChessBoard {
 	constructor(size = 8) { 
 		this.size = size
 		this.spaces = this.generateBoard()
-		this.pieces = this.generatePieces()
-		this.selected = "none"
+        this.pieces = this.generatePieces()
+        this.selected = "none"
 		this.updateQueue = []
 		this.populateBoard()
         this.renderBoard()
@@ -163,6 +210,7 @@ class ChessBoard {
         for (var square in piece.legalMoves) {
             this.spaces[square].addHighlight() // TODO: make this work
         }
+
     }
 
 	// returns all of a Piece's legal moves to their default color
@@ -181,6 +229,7 @@ class ChessBoard {
         // otherwise, determine whether we're reselecting or attacking
         } else if (this.selected != 'none') {
             // do nothing if we're attacking
+            console.log(this.selected)
             if (this.selected.isEnemyWith(piece)) {
                 return
             // else, deselect and continue with selection process
@@ -225,6 +274,18 @@ class ChessBoard {
 				this.deselect()
 			}
 		}
+        // DEBUG this is only for testing
+        // BUG: things often get weird when a king moves out of check
+        if (this.pieces['Kb'].inCheck()) {
+            this.spaces[this.pieces['Kb'].pos].redden() // TODO: make this work
+        } else {
+            this.spaces[this.pieces['Kb'].pos].removeHighlight() // TODO: make this work
+        }
+        if (this.pieces['Kw'].inCheck()) {
+            this.spaces[this.pieces['Kw'].pos].redden() // TODO: make this work
+        } else {
+            this.spaces[this.pieces['Kw'].pos].removeHighlight() // TODO: make this work
+        }
 	}
 }
 
@@ -259,6 +320,11 @@ class Square {
 	// turns this square yellow to show a piece's legal moves
     addHighlight() {
 		this.element.style.backgroundColor = "#FDFF47"
+    }
+
+    // DEBUG only used to show a king in check
+    redden() {
+        this.element.style.backgroundColor = "#FF0000"
     }
 
 	// restores this square to its normal color
@@ -385,6 +451,7 @@ class Piece {
     }
 
 	// each Piece subclass has a different way of checking for legal moves
+    // TODO: improve, right now it is called by ChessBoard.select() and King.inCheck()
     generateLegalMoves() {
         throw new Error("generic move generation function called")
     }
@@ -786,6 +853,42 @@ class King extends Piece {
 
 		this.legalMoves = newLegalMoves
 	}
+
+    inCheck() {
+        for (var dir in Utils.PositionIncrementer) {
+            var cur = this.pos
+            var done = false 
+            while (!done) {
+                cur = Utils.PositionIncrementer[dir](cur)
+                if (Utils.isValidSpace(cur)) {
+                    var space = this.board.spaces[cur]
+                    if (!space.isEmpty()) {
+                        var piece = space.contents
+                        if (piece.isEnemyWith(this)) {
+                            // TODO: less hacky legal move implementation
+                            piece.generateLegalMoves()
+                            if (piece.checkIfLegal(this.pos)) {
+                                return true
+                            }
+                        }
+                    }
+                } else {
+                    done = true
+                }
+            }
+        }
+        let knightPositions = Utils.getKnightCircle(this.pos)
+        for (var i=0; i<knightPositions.length; i++) {
+            var space = this.board.spaces[knightPositions[i]]
+            if (!space.isEmpty()) {
+                var piece = space.contents
+                if (piece.isEnemyWith(this) && piece.id[0] == 'N') {
+                    return true 
+                }
+            }
+        }
+        return false
+    }
 }
 
 const chessBoard = new ChessBoard()
