@@ -17,13 +17,14 @@ class ChessBoard {
 	generateBoard() {
 		var spaces = {}
 		var switchColor = false
-		for (var i in Utils.PositionMatrix) {
-			for (var j in Utils.PositionMatrix[i]) {
-				let key = Utils.PositionMatrix[i][j]
+		for (var i in Utils.coordMatrix) {
+			for (var j in Utils.coordMatrix[i]) {
+				let key = Utils.coordMatrix[i][j]
 				spaces[key] = new Square(
 					this,
 					switchColor === true ? '#a3524e' : '#f2e8e7', 
-					key)
+					key
+                )
 				switchColor = !switchColor
 			}
 			switchColor = !switchColor
@@ -93,8 +94,8 @@ class ChessBoard {
 			let rowElement = document.createElement('div')
 			rowElement.className = 'row'
 			rowElement.id = i 
-			for (var j in Utils.ColumnTable[i]) {
-				let coord = Utils.ColumnTable[i][j]
+			for (var j in Utils.columnTable[i]) {
+				let coord = Utils.columnTable[i][parseInt(j)]
 				let space = this.spaces[coord]
 				rowElement.appendChild(space.element)
 			}
@@ -103,8 +104,10 @@ class ChessBoard {
 	}
 
     // shows all of a Piece's legal moves in yellow
+	// BUG: if king selected while in check, this breaks
     highlightSquares(piece) {
         for (var square in piece.legalMoves) {
+			console.log(this.spaces[square])
             this.spaces[square].addHighlight() // TODO: make this work
         }
 
