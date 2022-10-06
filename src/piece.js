@@ -319,10 +319,10 @@ class King extends Piece {
             if (Utils.isValidSpace(pos)) {
                 let space = this.board.spaces[pos]
                 if (space.isEmpty()) {
-                    newLegalMoves[space] = 'm'
+                    newLegalMoves[pos] = 'm'
                 } else {
                     if (this.isEnemyWith(space.contents)) {
-                        newLegalMoves[space] = 'a'
+                        newLegalMoves[pos] = 'a'
                     }
                 }
             }

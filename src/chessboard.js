@@ -104,13 +104,10 @@ class ChessBoard {
 	}
 
     // shows all of a Piece's legal moves in yellow
-	// BUG: if king selected while in check, this breaks
     highlightSquares(piece) {
         for (var square in piece.legalMoves) {
-			console.log(this.spaces[square])
             this.spaces[square].addHighlight() // TODO: make this work
         }
-
     }
 
 	// returns all of a Piece's legal moves to their default color
@@ -129,7 +126,6 @@ class ChessBoard {
         // otherwise, determine whether we're reselecting or attacking
         } else if (this.selected != 'none') {
             // do nothing if we're attacking
-            console.log(this.selected)
             if (this.selected.isEnemyWith(piece)) {
                 return
             // else, deselect and continue with selection process
