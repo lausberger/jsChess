@@ -153,6 +153,57 @@ class ChessBoard {
 		holder.removeChild(holder.firstChild)
 	}
 
+	handleAttack(atkSquare, defSquare) {
+		let a = atkSquare.contents 
+		let b = defSquare.contents
+		if (atkSquare.hasPiece(a) && !defSquare.isEmpty()) {
+			atkSquare.removePiece(a)
+			defSquare.removePiece(b)
+			defSquare.addPiece(a)
+			b.kill()
+			if (a.firstMove) {
+				a.firstMove = false
+			}
+			// TODO: this likely should not go here
+			if (b.id[0] == 'K') {
+				defSquare.removeHighlight()
+			}
+			if (a.id[0] == 'K') {
+				atkSquare.removeHighlight()
+			}
+			// DEBUG
+			console.log(`${a.id} x ${b.id} -> ${defSquare.id}`)
+			return true
+		} else {
+			// DEBUG
+			console.log("failure during attack")
+			console.log("assert src has piece: " + atkSquare.hasPiece(a))
+			console.log("assert dst is not empty: " + !defSquare.isEmpty())
+			return false
+		}
+	}
+
+	handleMove(srcSquare, dstSquare) {
+		let a = srcSquare.contents
+		// TODO: isEmpty() is implicitly called twice here, is that ok?
+		if (srcSquare.hasPiece(a) && dstSquare.isEmpty()) {
+			srcSquare.removePiece(a)
+			dstSquare.addPiece(a)
+			if (a.firstMove) {
+				a.firstMove = false
+			}
+			// DEBUG
+			console.log(`${a.id} ${srcSquare.id} -> ${dstSquare.id}`)
+			return true
+		} else {
+			// DEBUG
+			console.log("something has gone horribly wrong when moving")
+			console.log("assert src has piece: " + srcSquare.hasPiece(a))
+			console.log("assert dst is empty: " + dstSquare.isEmpty())
+			return false
+		}
+	}
+
 	// used to send a Piece's desired action to the board so it can be executed
 	pushUpdate(update) {
 		this.updateQueue.push(update)
@@ -165,22 +216,30 @@ class ChessBoard {
 			let u = this.updateQueue.shift()
 			let piece = u[1]
 			let dst = u[3]
-
 			if (this.pieces[piece].move(dst)) {
 				this.deselect()
 			}
 		}
         // DEBUG this is only for testing
-        // BUG: things often get weird when a king moves out of check
-        if (this.pieces['Kb'].inCheck()) {
-            this.spaces[this.pieces['Kb'].pos].redden() // TODO: make this work
-        } else {
-            this.spaces[this.pieces['Kb'].pos].removeHighlight() // TODO: make this work
-        }
-        if (this.pieces['Kw'].inCheck()) {
-            this.spaces[this.pieces['Kw'].pos].redden() // TODO: make this work
-        } else {
-            this.spaces[this.pieces['Kw'].pos].removeHighlight() // TODO: make this work
-        }
+		if (this.pieces['Kb'].isAlive()) {
+			if (this.pieces['Kb'].inCheck()) {
+				this.spaces[this.pieces['Kb'].pos].redden()
+				console.log('reddening Kb in check')
+				console.log('Kb board position: ' + this.pieces['Kb'].pos)
+			} else {
+				this.spaces[this.pieces['Kb'].pos].removeHighlight()
+			}
+			console.log('Kb in check: ' + this.pieces['Kb'].inCheck())
+		}
+        if (this.pieces['Kw'].isAlive()) {
+			if (this.pieces['Kw'].inCheck()) {
+				this.spaces[this.pieces['Kw'].pos].redden()
+				console.log('reddening Kw in check')
+				console.log('Kw board position: ' + this.pieces['Kw'].pos)
+			} else {
+				this.spaces[this.pieces['Kw'].pos].removeHighlight()
+			}
+			console.log('Kw in check: ' + this.pieces['Kw'].inCheck())
+		}
 	}
 }

@@ -43,8 +43,13 @@ class Square {
     
 	// places a piece in this square
 	addPiece(piece) {
+		if (!this.isEmpty()) {
+			throw new Error("Attempting to add piece to occupied square!")
+		}
 		this.contents = piece
 		this.element.appendChild(piece.element)
+		// DEBUG TODO is this here
+		piece.pos = this.id
 	}
 
 	// makes this square empty again
@@ -52,10 +57,11 @@ class Square {
 	removePiece(piece) {
         if (!this.hasPiece(piece)) {
 			throw new Error("Attempting to remove a piece that is not there!")
-		} else {
-			this.contents = "empty"
-			this.element.removeChild(piece.element)
 		}
+		this.contents = "empty"
+		this.element.removeChild(piece.element)	
+		// DEBUG TODO does this belong here
+		piece.pos = null
 	}
 
 	// check if a given piece is in this square
@@ -65,7 +71,7 @@ class Square {
         if (containsPiece && elementContains) {
             return true
         } else {
-            console.log("Error in " + this.id + " contains check")
+            console.log("Error in " + this.id + " contents check")
             console.log("\tContains piece object: " + containsPiece)
             console.log("\tElement contains piece element: " + elementContains)
             return false

@@ -5,6 +5,7 @@ class Piece {
 		this.id = id
 		this.pos = position
         this.legalMoves = {}
+		this.alive = true
 		this.element = document.createElement('img')
 		this.initializeElement()
 	}
@@ -26,39 +27,19 @@ class Piece {
 		if (this.checkIfLegal(position)) {
 			let src = this.board.spaces[this.pos]
 			let dst = this.board.spaces[position]
-
 			if (this.legalMoves[position] == 'a') {
-                console.log("attacking!")
-                if (src.hasPiece(this) && !dst.isEmpty()) {
-					dst.removePiece(dst.contents)
-					src.removePiece(this)
-					dst.addPiece(this)
-					this.pos = position
-					this.firstMove = false
-					return true
-				} else {
-					console.log("failure during attack")
-                    console.log("assert src has piece: " + src.hasPiece(this))
-                    console.log("assert dst is not empty: " + !dst.isEmpty())
-				}
-            //TODO: add an attack function
+				return this.board.handleAttack(src, dst)
             } else if (this.legalMoves[position] == 'm') {
-                console.log("moving")
-                if (src.hasPiece(this) && dst.isEmpty()) {
-					src.removePiece(this)
-					dst.addPiece(this)
-					this.pos = position
-					this.firstMove = false
-					return true
-				} else {
-					console.log("something has gone horribly wrong when moving")
-					console.log("assert src has piece: " + src.hasPiece(this))
-					console.log("assert dst is empty: " + dst.isEmpty())
+				// DEBUG more highlight debug
+				if (this.id[0] == 'K') {
+					src.removeHighlight()
 				}
+				return this.board.handleMove(src, dst)
             } else {
-                throw new Error("Unknown action type in move for " + this)
-            }	
+                throw new Error("Unknown action type in move for " + this + ": " + this.legalMoves[position])
+            }
 		} else {
+			// DEBUG
             console.log("Illegal move attempted: " + this.id + " to " + position + " from " + this.pos)
         }
 		return false
@@ -86,6 +67,13 @@ class Piece {
 		return false
 	}
 
+	kill() {
+		this.alive = false
+	}
+
+	isAlive() {
+		return this.alive
+	}
 }
 
 class Pawn extends Piece {
@@ -331,6 +319,8 @@ class King extends Piece {
 		this.legalMoves = newLegalMoves
 	}
 
+	// TODO this does no sanity checks for this.pos, because an invalid pos
+	// signals a bug elsewhere or a game that's already over
     inCheck() {
         for (var dir in Utils.coordIncrementer) {
             var cur = this.pos
@@ -338,9 +328,9 @@ class King extends Piece {
             while (!done) {
                 cur = Utils.coordIncrementer[dir](cur)
                 if (Utils.isValidSpace(cur)) {
-                    var space = this.board.spaces[cur]
+                    let space = this.board.spaces[cur]
                     if (!space.isEmpty()) {
-                        var piece = space.contents
+                        let piece = space.contents
                         if (piece.isEnemyWith(this)) {
                             // TODO: less hacky legal move implementation
                             piece.generateLegalMoves()
