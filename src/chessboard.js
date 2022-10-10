@@ -172,22 +172,20 @@ class ChessBoard {
 	}
 
 	// replacement for Piece.move(); performs a move or attack and returns the result
-	executeAction(update) {
+	executeUpdate(update) {
 		let piece = this.pieces[update[1]]
 		let coord = update[3]
 		if (piece.checkIfLegal(coord)) {
 			let src = this.getSpaceOfPiece(piece)
 			let dst = this.spaces[coord]
-			if (piece.legalMoves[coord] == 'm') {
-				// DEBUG ensures check highlighting doens't persist
-				// TODO should not be needed
+			// DEBUG ensures check highlighting doens't persist
+			// TODO decide if this sanity check needs to exist
+			if (piece.legalMoves[coord] == 'm' || piece.legalMoves[coord] == 'a') {
 				if (piece.getType() == 'K') {
 					src.removeHighlight()
 				}
-				return this.handleMove(src, dst)
-			} else if (piece.legalMoves[coord] == 'a') {
-				return this.handleAttack(src, dst)
-			} else {
+				return this.handleAction(src, dst)
+			} else { 
 				throw new Error("Unknown action type for " + piece.id + ": " + piece.legalMoves[coord])
 			}
 		} else {
@@ -196,61 +194,40 @@ class ChessBoard {
 		}
 	}
 
-	// TODO: combine this and handleMove into single function
-	handleAttack(atkSpace, defSpace) {
-		let a = atkSpace.contents 
-		let b = defSpace.contents
-		if (atkSpace.hasPiece(a) && !defSpace.isEmpty()) {
-			// atkSpace.removePiece(a)
-			// defSpace.removePiece(b)
-			// defSpace.addPiece(a)
-			this.removePieceFromSpace(a, atkSpace)
-			this.removePieceFromSpace(b, defSpace)
-			this.addPieceToSpace(a, defSpace)
-			b.kill()
-			if (a.firstMove) {
-				a.firstMove = false
+	handleAction(src, dst) {
+		let pieceA = src.getContents()
+		if (!dst.isEmpty() && pieceA != 'empty') { // attack
+			let pieceB = dst.getContents()
+			this.removePieceFromSpace(pieceA, src)
+			this.removePieceFromSpace(pieceB, dst)
+			this.addPieceToSpace(pieceA, dst)
+			pieceB.kill()
+			// TODO more OO implementation?
+			pieceA.handleFirstMove()
+			// TODO DEBUG better implementation that doesn't require this to be here
+			if (pieceA.getType() == 'K') {
+				src.removeHighlight()
 			}
-			// TODO: this likely should not go here
-			if (b.id[0] == 'K') {
-				defSpace.removeHighlight()
-			}
-			if (a.id[0] == 'K') {
-				atkSpace.removeHighlight()
+			if (pieceB.getType() == 'K') {
+				dst.removeHighlight()
 			}
 			// DEBUG
-			console.log(`${a.id} x ${b.id} -> ${defSpace.id}`)
+			console.log(`${pieceA.id} x ${pieceB.id} -> ${dst.id}`)
+			return true
+		} else if (dst.isEmpty() && pieceA != 'empty'){ // movement
+			this.removePieceFromSpace(pieceA, src)
+			this.addPieceToSpace(pieceA, dst)
+			pieceA.handleFirstMove()
+			// DEBUG
+			console.log(`${pieceA.id} ${src.id} -> ${dst.id}`)
 			return true
 		} else {
 			// DEBUG
-			console.log("failure during attack")
-			console.log("assert src has piece: " + atkSpace.hasPiece(a))
-			console.log("assert dst is not empty: " + !defSpace.isEmpty())
-			return false
-		}
-	}
-
-	// TODO combine this and handleAttack into single function
-	// TODO rename variables for clarity
-	handleMove(srcSpace, dstSpace) {
-		let a = srcSpace.contents
-		// TODO: isEmpty() is implicitly called twice here, is that ok?
-		if (srcSpace.hasPiece(a) && dstSpace.isEmpty()) {
-			// srcSpace.removePiece(a)
-			// dstSpace.addPiece(a)
-			this.removePieceFromSpace(a, srcSpace)
-			this.addPieceToSpace(a, dstSpace)
-			if (a.firstMove) {
-				a.firstMove = false
-			}
-			// DEBUG
-			console.log(`${a.id} ${srcSpace.id} -> ${dstSpace.id}`)
-			return true
-		} else {
-			// DEBUG
-			console.log("something has gone horribly wrong when moving")
-			console.log("assert src has piece: " + srcSpace.hasPiece(a))
-			console.log("assert dst is empty: " + dstSpace.isEmpty())
+			console.log("something has gone horribly wrong during action")
+			console.log("Source space:")
+			console.log(src)
+			console.log("Destination space:")
+			console.log(dst)
 			return false
 		}
 	}
@@ -258,15 +235,12 @@ class ChessBoard {
 	kingsCheckStatus() {
 		var result = {}
 		let kings = [this.pieces['Kw'], this.pieces['Kb']]
-
 		for (var k of kings) {
 			result[k.id] = false
-
 			// DEBUG here so this can be called when a king is dead
 			if (!k.isAlive()) {
 				continue
 			}
-
 			for (var direction in Utils.coordIncrementer) {
 				var c = k.pos
 				var done = false
@@ -289,7 +263,6 @@ class ChessBoard {
 					}
 				}
 			}
-
 			for (var c of Utils.knightCoords(k.pos)) {
 				let s = this.spaces[c]
 				if (!s.isEmpty()) {
@@ -301,7 +274,6 @@ class ChessBoard {
 				}
 			}
 		}
-
 		return result
 	}
 
@@ -330,8 +302,10 @@ class ChessBoard {
 	updateBoard() {
 		while (this.updateQueue.length) {
 			let update = this.updateQueue.shift()
-			if (this.executeAction(update)) {
+			if (this.executeUpdate(update)) {
 				this.deselect()
+			} else { // TODO remove this eventually
+				throw new Error(`executeUpdate returned false for update: ${update}`)
 			}
 		}
         // DEBUG this is only for testing, for now

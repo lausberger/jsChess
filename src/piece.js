@@ -65,6 +65,10 @@ class Piece {
 	getMoveset() {
 		return this.moveset
 	}
+
+	// does nothing unless Pawn
+	handleFirstMove() {
+	}
 }
 
 class Pawn extends Piece {
@@ -118,6 +122,12 @@ class Pawn extends Piece {
 
         this.legalMoves = newLegalMoves
     }
+
+	handleFirstMove() {
+		if (this.firstMove) {
+			this.firstMove = false
+		}
+	}
 }
 
 class Rook extends Piece {
