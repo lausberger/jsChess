@@ -171,6 +171,32 @@ class ChessBoard {
 		holder.removeChild(holder.firstChild)
 	}
 
+	// replacement for Piece.move(); performs a move or attack and returns the result
+	executeAction(update) {
+		let piece = this.pieces[update[1]]
+		let coord = update[3]
+		if (piece.checkIfLegal(coord)) {
+			let src = this.getSpaceOfPiece(piece)
+			let dst = this.spaces[coord]
+			if (piece.legalMoves[coord] == 'm') {
+				// DEBUG ensures check highlighting doens't persist
+				// TODO should not be needed
+				if (piece.getType() == 'K') {
+					src.removeHighlight()
+				}
+				return this.handleMove(src, dst)
+			} else if (piece.legalMoves[coord] == 'a') {
+				return this.handleAttack(src, dst)
+			} else {
+				throw new Error("Unknown action type for " + piece.id + ": " + piece.legalMoves[coord])
+			}
+		} else {
+			// DEBUG
+			console.log(`Illegal move attempted: ${piece.id} to ${coord} from ${piece.pos}`)
+		}
+	}
+
+	// TODO: combine this and handleMove into single function
 	handleAttack(atkSpace, defSpace) {
 		let a = atkSpace.contents 
 		let b = defSpace.contents
@@ -204,6 +230,7 @@ class ChessBoard {
 		}
 	}
 
+	// TODO combine this and handleAttack into single function
 	// TODO rename variables for clarity
 	handleMove(srcSpace, dstSpace) {
 		let a = srcSpace.contents
@@ -301,11 +328,9 @@ class ChessBoard {
 	// execute all actions stored within the update queue
 	// this system makes it easy to move multiple pieces in one turn (ex. Castling)
 	updateBoard() {
-		while (this.updateQueue.length) { // while update queue is not empty
-			let u = this.updateQueue.shift()
-			let piece = u[1]
-			let dst = u[3]
-			if (this.pieces[piece].move(dst)) {
+		while (this.updateQueue.length) {
+			let update = this.updateQueue.shift()
+			if (this.executeAction(update)) {
 				this.deselect()
 			}
 		}

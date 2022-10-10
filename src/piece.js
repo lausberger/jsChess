@@ -32,31 +32,6 @@ class Piece {
 		return this.id[0]
 	}
 
-	// move a Piece to a Space, given the id string of the position
-	// makes sure the move is legal first
-	// TODO: move as much of this functionality to ChessBoard as possible
-	move(position) {
-		if (this.checkIfLegal(position)) {
-			let src = this.board.spaces[this.pos]
-			let dst = this.board.spaces[position]
-			if (this.legalMoves[position] == 'a') {
-				return this.board.handleAttack(src, dst)
-            } else if (this.legalMoves[position] == 'm') {
-				// DEBUG more highlight debug
-				if (this.id[0] == 'K') {
-					src.removeHighlight()
-				}
-				return this.board.handleMove(src, dst)
-            } else {
-                throw new Error("Unknown action type in move for " + this + ": " + this.legalMoves[position])
-            }
-		} else {
-			// DEBUG
-            console.log("Illegal move attempted: " + this.id + " to " + position + " from " + this.pos)
-        }
-		return false
-    }
-
 	// checks to see if a position is in this Piece's list of legal mvoes
     checkIfLegal(position) {
         if (this.legalMoves[position]) {
