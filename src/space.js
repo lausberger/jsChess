@@ -1,5 +1,5 @@
 // represents one space on a ChessBoard
-class Square {
+class Space {
 	constructor(board, color, id) {
 		this.board = board
 		this.color = color
@@ -11,7 +11,7 @@ class Square {
 
 	// creates the html element that is tied to this object
 	initializeElement() {
-		this.element.className = 'square'
+		this.element.className = 'space'
 		this.element.id = this.id
 		this.element.style.backgroundColor = this.color
 		this.element.onclick = () => {
@@ -26,7 +26,7 @@ class Square {
 		}
 	}
 
-	// turns this square yellow to show a piece's legal moves
+	// turns this space yellow to show a piece's legal moves
     addHighlight() {
 		this.element.style.backgroundColor = "#FDFF47"
     }
@@ -36,22 +36,22 @@ class Square {
         this.element.style.backgroundColor = "#FF0000"
     }
 
-	// restores this square to its normal color
+	// restores this space to its normal color
     removeHighlight() {
 		this.element.style.backgroundColor = this.color
     }
     
-	// places a Piece in this square
+	// places a Piece in this space
 	// does NOT update Piece's position (see ChessBoard.addPieceToSpace())
 	addPiece(piece) {
 		if (!this.isEmpty()) {
-			throw new Error("Attempting to add piece to occupied square!")
+			throw new Error("Attempting to add piece to occupied space!")
 		}
 		this.contents = piece
 		this.element.appendChild(piece.element)
 	}
 
-	// makes this square empty again
+	// makes this space empty again
 	// does NOT update Piece's position (see ChessBoard.removePieceFromSpace())
 	removePiece(piece) {
         if (!this.hasPiece(piece)) {
@@ -61,7 +61,7 @@ class Square {
 		this.element.removeChild(piece.element)	
 	}
 
-	// check if a given piece is in this square
+	// check if a given piece is in this space
     hasPiece(piece) {
         let containsPiece = this.contents == piece
         let elementContains = this.element.contains(piece.element)
@@ -75,10 +75,10 @@ class Square {
         }
     }
 
-	// check if this square is empty
+	// check if this space is empty
     isEmpty() {
         let contentsEmpty = this.contents == 'empty'
-        // an empty square either has no children, or only a highlight
+        // an empty space either has no children, or only a highlight
         let elementEmpty = !this.element.hasChildNodes() || this.element.querySelector('#hl')
         if (contentsEmpty && elementEmpty) {
             return true

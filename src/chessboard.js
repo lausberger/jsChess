@@ -11,7 +11,7 @@ class ChessBoard {
         this.renderBoard()
 	}
 
-	// creates a dictionary of Square objects with alternating colors
+	// creates a dictionary of Space objects with alternating colors
 	// #a3524e = burgundy
 	// #f2e8e7 = red-tinted white
 	generateBoard() {
@@ -20,7 +20,7 @@ class ChessBoard {
 		for (var i in Utils.coordMatrix) {
 			for (var j in Utils.coordMatrix[i]) {
 				let key = Utils.coordMatrix[i][j]
-				spaces[key] = new Square(
+				spaces[key] = new Space(
 					this,
 					switchColor === true ? '#a3524e' : '#f2e8e7', 
 					key
@@ -78,7 +78,7 @@ class ChessBoard {
 		return pieces
 	}
 
-	// places all Piece objects into their starting Square
+	// places all Piece objects into their starting Space
 	// TODO: what if this happened in the constructor of a Piece?
 	populateBoard() {
 		for (var p in this.pieces) {
@@ -87,7 +87,7 @@ class ChessBoard {
 		}
 	}
 
-	// display ChessBoard by creating row elements containing each Square's element
+	// display ChessBoard by creating row elements containing each Space's element
 	renderBoard() {
 		let boardElement = document.getElementById('chessBoard')
 		for (var i = 8; i > 0; i--) {
@@ -104,16 +104,16 @@ class ChessBoard {
 	}
 
     // shows all of a Piece's legal moves in yellow
-    highlightSquares(piece) {
-        for (var square in piece.legalMoves) {
-            this.spaces[square].addHighlight() // TODO: make this work
+    highlightSpaces(piece) {
+        for (var space in piece.legalMoves) {
+            this.spaces[space].addHighlight() // TODO: make this work
         }
     }
 
 	// returns all of a Piece's legal moves to their default color
     removeHighlights(piece) {
-        for (var square in piece.legalMoves) {
-            this.spaces[square].removeHighlight()
+        for (var space in piece.legalMoves) {
+            this.spaces[space].removeHighlight()
         }
     }
 
@@ -155,7 +155,7 @@ class ChessBoard {
 		this.selected = piece
 		console.log(piece)
     	piece.generateLegalMoves()
-        this.highlightSquares(piece)
+        this.highlightSpaces(piece)
 		let holder = document.getElementById('holder')
 		let rPiece = document.getElementById(piece.id).cloneNode(true)
 		if (holder.firstChild) {
@@ -172,59 +172,59 @@ class ChessBoard {
 		holder.removeChild(holder.firstChild)
 	}
 
-	handleAttack(atkSquare, defSquare) {
-		let a = atkSquare.contents 
-		let b = defSquare.contents
-		if (atkSquare.hasPiece(a) && !defSquare.isEmpty()) {
-			// atkSquare.removePiece(a)
-			// defSquare.removePiece(b)
-			// defSquare.addPiece(a)
-			this.removePieceFromSpace(a, atkSquare)
-			this.removePieceFromSpace(b, defSquare)
-			this.addPieceToSpace(a, defSquare)
+	handleAttack(atkSpace, defSpace) {
+		let a = atkSpace.contents 
+		let b = defSpace.contents
+		if (atkSpace.hasPiece(a) && !defSpace.isEmpty()) {
+			// atkSpace.removePiece(a)
+			// defSpace.removePiece(b)
+			// defSpace.addPiece(a)
+			this.removePieceFromSpace(a, atkSpace)
+			this.removePieceFromSpace(b, defSpace)
+			this.addPieceToSpace(a, defSpace)
 			b.kill()
 			if (a.firstMove) {
 				a.firstMove = false
 			}
 			// TODO: this likely should not go here
 			if (b.id[0] == 'K') {
-				defSquare.removeHighlight()
+				defSpace.removeHighlight()
 			}
 			if (a.id[0] == 'K') {
-				atkSquare.removeHighlight()
+				atkSpace.removeHighlight()
 			}
 			// DEBUG
-			console.log(`${a.id} x ${b.id} -> ${defSquare.id}`)
+			console.log(`${a.id} x ${b.id} -> ${defSpace.id}`)
 			return true
 		} else {
 			// DEBUG
 			console.log("failure during attack")
-			console.log("assert src has piece: " + atkSquare.hasPiece(a))
-			console.log("assert dst is not empty: " + !defSquare.isEmpty())
+			console.log("assert src has piece: " + atkSpace.hasPiece(a))
+			console.log("assert dst is not empty: " + !defSpace.isEmpty())
 			return false
 		}
 	}
 
 	// TODO rename variables for clarity
-	handleMove(srcSquare, dstSquare) {
-		let a = srcSquare.contents
+	handleMove(srcSpace, dstSpace) {
+		let a = srcSpace.contents
 		// TODO: isEmpty() is implicitly called twice here, is that ok?
-		if (srcSquare.hasPiece(a) && dstSquare.isEmpty()) {
-			// srcSquare.removePiece(a)
-			// dstSquare.addPiece(a)
-			this.removePieceFromSpace(a, srcSquare)
-			this.addPieceToSpace(a, dstSquare)
+		if (srcSpace.hasPiece(a) && dstSpace.isEmpty()) {
+			// srcSpace.removePiece(a)
+			// dstSpace.addPiece(a)
+			this.removePieceFromSpace(a, srcSpace)
+			this.addPieceToSpace(a, dstSpace)
 			if (a.firstMove) {
 				a.firstMove = false
 			}
 			// DEBUG
-			console.log(`${a.id} ${srcSquare.id} -> ${dstSquare.id}`)
+			console.log(`${a.id} ${srcSpace.id} -> ${dstSpace.id}`)
 			return true
 		} else {
 			// DEBUG
 			console.log("something has gone horribly wrong when moving")
-			console.log("assert src has piece: " + srcSquare.hasPiece(a))
-			console.log("assert dst is empty: " + dstSquare.isEmpty())
+			console.log("assert src has piece: " + srcSpace.hasPiece(a))
+			console.log("assert dst is empty: " + dstSpace.isEmpty())
 			return false
 		}
 	}

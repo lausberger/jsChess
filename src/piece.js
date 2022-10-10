@@ -27,7 +27,7 @@ class Piece {
 		this.pos = pos
 	}
 
-	// move a Piece to a Square, given the id string of the position
+	// move a Piece to a Space, given the id string of the position
 	// makes sure the move is legal first
 	// TODO: move as much of this functionality to ChessBoard as possible
 	move(position) {
