@@ -41,27 +41,24 @@ class Square {
 		this.element.style.backgroundColor = this.color
     }
     
-	// places a piece in this square
+	// places a Piece in this square
+	// does NOT update Piece's position (see ChessBoard.addPieceToSpace())
 	addPiece(piece) {
 		if (!this.isEmpty()) {
 			throw new Error("Attempting to add piece to occupied square!")
 		}
 		this.contents = piece
 		this.element.appendChild(piece.element)
-		// DEBUG TODO is this here
-		piece.pos = this.id
 	}
 
 	// makes this square empty again
-	// TODO: decide whether to remove piece argument
+	// does NOT update Piece's position (see ChessBoard.removePieceFromSpace())
 	removePiece(piece) {
         if (!this.hasPiece(piece)) {
 			throw new Error("Attempting to remove a piece that is not there!")
 		}
 		this.contents = "empty"
 		this.element.removeChild(piece.element)	
-		// DEBUG TODO does this belong here
-		piece.pos = null
 	}
 
 	// check if a given piece is in this square

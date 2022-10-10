@@ -117,6 +117,25 @@ class ChessBoard {
         }
     }
 
+	// return a reference to the Space occupied by a given Piece, else null
+	getSpaceOfPiece(piece) {
+		return this.spaces[piece.pos] || null
+	}
+
+	// only the ChessBoard should be able to manage both Space and Piece properties
+	// TODO should this return a status boolean?
+	removePieceFromSpace(piece, space) {
+		space.removePiece(piece)
+		piece.setPosition('')
+	}
+
+	// only the ChessBoard should be able to manage both Space and Piece properties
+	// TODO should this return a status boolean?
+	addPieceToSpace(piece, space) {
+		space.addPiece(piece)
+		piece.setPosition(space.id)
+	}
+
 	// places a Piece inside of the holder element and allows it to perform actions
 	select(piece) {
         // deselect when clicking the same piece that is selected
@@ -157,9 +176,12 @@ class ChessBoard {
 		let a = atkSquare.contents 
 		let b = defSquare.contents
 		if (atkSquare.hasPiece(a) && !defSquare.isEmpty()) {
-			atkSquare.removePiece(a)
-			defSquare.removePiece(b)
-			defSquare.addPiece(a)
+			// atkSquare.removePiece(a)
+			// defSquare.removePiece(b)
+			// defSquare.addPiece(a)
+			this.removePieceFromSpace(a, atkSquare)
+			this.removePieceFromSpace(b, defSquare)
+			this.addPieceToSpace(a, defSquare)
 			b.kill()
 			if (a.firstMove) {
 				a.firstMove = false
@@ -183,12 +205,15 @@ class ChessBoard {
 		}
 	}
 
+	// TODO rename variables for clarity
 	handleMove(srcSquare, dstSquare) {
 		let a = srcSquare.contents
 		// TODO: isEmpty() is implicitly called twice here, is that ok?
 		if (srcSquare.hasPiece(a) && dstSquare.isEmpty()) {
-			srcSquare.removePiece(a)
-			dstSquare.addPiece(a)
+			// srcSquare.removePiece(a)
+			// dstSquare.addPiece(a)
+			this.removePieceFromSpace(a, srcSquare)
+			this.addPieceToSpace(a, dstSquare)
 			if (a.firstMove) {
 				a.firstMove = false
 			}
@@ -201,6 +226,29 @@ class ChessBoard {
 			console.log("assert src has piece: " + srcSquare.hasPiece(a))
 			console.log("assert dst is empty: " + dstSquare.isEmpty())
 			return false
+		}
+	}
+
+	// updates the appearance of King Spaces if in check
+	updateCheckHighlighting() {
+		let kw = this.pieces['Kw']
+		let kwSpace = this.getSpaceOfPiece(kw)
+		if (kw.inCheck()) {
+			kwSpace.redden()
+			console.log('reddening Kw in check')
+			console.log('Kw board position: ' + kw.pos)
+		} else if (kwSpace) { // dead King space is null
+			kwSpace.removeHighlight()
+		}
+
+		let kb = this.pieces['Kb']
+		let kbSpace = this.getSpaceOfPiece(kb)
+		if (kb.inCheck()) {
+			kbSpace.redden()
+			console.log('reddening Kb in check')
+			console.log('Kb board position: ' + kw.pos)
+		} else if (kbSpace) { // dead King space is null
+			kbSpace.removeHighlight()
 		}
 	}
 
@@ -220,26 +268,7 @@ class ChessBoard {
 				this.deselect()
 			}
 		}
-        // DEBUG this is only for testing
-		if (this.pieces['Kb'].isAlive()) {
-			if (this.pieces['Kb'].inCheck()) {
-				this.spaces[this.pieces['Kb'].pos].redden()
-				console.log('reddening Kb in check')
-				console.log('Kb board position: ' + this.pieces['Kb'].pos)
-			} else {
-				this.spaces[this.pieces['Kb'].pos].removeHighlight()
-			}
-			console.log('Kb in check: ' + this.pieces['Kb'].inCheck())
-		}
-        if (this.pieces['Kw'].isAlive()) {
-			if (this.pieces['Kw'].inCheck()) {
-				this.spaces[this.pieces['Kw'].pos].redden()
-				console.log('reddening Kw in check')
-				console.log('Kw board position: ' + this.pieces['Kw'].pos)
-			} else {
-				this.spaces[this.pieces['Kw'].pos].removeHighlight()
-			}
-			console.log('Kw in check: ' + this.pieces['Kw'].inCheck())
-		}
+        // DEBUG this is only for testing, for now
+		this.updateCheckHighlighting()
 	}
 }

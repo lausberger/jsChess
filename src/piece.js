@@ -21,8 +21,15 @@ class Piece {
 		}
 	}
 
+	// cheap interface for pos variable with no sanity checking
+	// TODO decide if sanity check is needed
+	setPosition(pos) {
+		this.pos = pos
+	}
+
 	// move a Piece to a Square, given the id string of the position
 	// makes sure the move is legal first
+	// TODO: move as much of this functionality to ChessBoard as possible
 	move(position) {
 		if (this.checkIfLegal(position)) {
 			let src = this.board.spaces[this.pos]
@@ -54,7 +61,7 @@ class Piece {
     }
 
 	// each Piece subclass has a different way of checking for legal moves
-    // TODO: improve, right now it is called by ChessBoard.select() and King.inCheck()
+    // TODO: improve, right now it is called by both ChessBoard.select() and King.inCheck()
     generateLegalMoves() {
         throw new Error("generic move generation function called")
     }
@@ -322,6 +329,11 @@ class King extends Piece {
 	// TODO this does no sanity checks for this.pos, because an invalid pos
 	// signals a bug elsewhere or a game that's already over
     inCheck() {
+		// DEBUG allows inCheck to be called when game is technically "over"
+		if (this.alive == false) { 
+			return false
+		}
+
         for (var dir in Utils.coordIncrementer) {
             var cur = this.pos
             var done = false 
