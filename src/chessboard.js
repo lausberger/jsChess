@@ -1,8 +1,7 @@
 // creates the ChessBoard object and corresponding html element
 class ChessBoard {
 	// create an 8 by 8 chessboard
-	constructor(size = 8) { 
-		this.size = size
+	constructor() { 
 		this.spaces = this.generateBoard()
         this.pieces = this.generatePieces()
         this.selected = "none"
@@ -145,7 +144,7 @@ class ChessBoard {
         // otherwise, determine whether we're reselecting or attacking
         } else if (this.selected != 'none') {
             // do nothing if we're attacking
-            if (this.selected.isEnemyWith(piece)) {
+            if (this.selected.isEnemyOf(piece)) {
                 return
             // else, deselect and continue with selection process
             } else {
@@ -229,26 +228,68 @@ class ChessBoard {
 		}
 	}
 
-	// updates the appearance of King Spaces if in check
-	updateCheckHighlighting() {
-		let kw = this.pieces['Kw']
-		let kwSpace = this.getSpaceOfPiece(kw)
-		if (kw.inCheck()) {
-			kwSpace.redden()
-			console.log('reddening Kw in check')
-			console.log('Kw board position: ' + kw.pos)
-		} else if (kwSpace) { // dead King space is null
-			kwSpace.removeHighlight()
+	kingsCheckStatus() {
+		var result = {}
+		let kings = [this.pieces['Kw'], this.pieces['Kb']]
+
+		for (var k of kings) {
+			result[k.id] = false
+
+			// DEBUG here so this can be called when a king is dead
+			if (!k.isAlive()) {
+				continue
+			}
+
+			for (var direction in Utils.coordIncrementer) {
+				var c = k.pos
+				var done = false
+				while (!done) {
+					c = Utils.coordIncrementer[direction](c)
+					if (Utils.isValidSpace(c)) {
+						let s = this.spaces[c]
+						if (!s.isEmpty()) {
+							let p = s.getContents()
+							if (p.isEnemyOf(k)) {
+								p.generateLegalMoves()
+								if (p.checkIfLegal(k.pos)) {
+									result[k.id] = true
+									done = true
+								}
+							}
+						}
+					} else {
+						done = true
+					}
+				}
+			}
+
+			for (var c of Utils.knightCoords(k.pos)) {
+				let s = this.spaces[c]
+				if (!s.isEmpty()) {
+					let p = s.getContents()
+					if (p.isEnemyOf(k) && p.getType() == 'N') {
+						result[k.id] = true
+						break
+					}
+				}
+			}
 		}
 
-		let kb = this.pieces['Kb']
-		let kbSpace = this.getSpaceOfPiece(kb)
-		if (kb.inCheck()) {
-			kbSpace.redden()
-			console.log('reddening Kb in check')
-			console.log('Kb board position: ' + kw.pos)
-		} else if (kbSpace) { // dead King space is null
-			kbSpace.removeHighlight()
+		return result
+	}
+
+	// updates the appearance of King Spaces if in check
+	updateCheckHighlighting() {
+		for (let [k, inCheck] of Object.entries(this.kingsCheckStatus())) {
+			let p = this.pieces[k]
+			let s = this.getSpaceOfPiece(p)
+			if (inCheck) {
+				s.redden()
+				console.log(`reddening ${p.id} in check`)
+				console.log(`${p.id} board position: ${p.pos}`)
+			} else if (s) { // dead King space is null
+				s.removeHighlight()
+			}
 		}
 	}
 

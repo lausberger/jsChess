@@ -3,6 +3,7 @@ class Piece {
 	constructor(board, id, position) {
 		this.board = board
 		this.id = id
+		this.moveset = null
 		this.pos = position
         this.legalMoves = {}
 		this.alive = true
@@ -25,6 +26,10 @@ class Piece {
 	// TODO decide if sanity check is needed
 	setPosition(pos) {
 		this.pos = pos
+	}
+
+	getType() {
+		return this.id[0]
 	}
 
 	// move a Piece to a Space, given the id string of the position
@@ -67,7 +72,7 @@ class Piece {
     }
 
 	// checks whether a Piece belongs to the opposing team, used to find legal moves
-	isEnemyWith(otherPiece) {
+	isEnemyOf(otherPiece) {
 		if (this.id[1] != otherPiece.id[1]) {
 			return true
 		}
@@ -80,6 +85,10 @@ class Piece {
 
 	isAlive() {
 		return this.alive
+	}
+
+	getMoveset() {
+		return this.moveset
 	}
 }
 
@@ -124,7 +133,7 @@ class Pawn extends Piece {
 					}
 				} else {
 					if (type == 'a') {
-						if (this.isEnemyWith(space.contents)) {
+						if (this.isEnemyOf(space.contents)) {
 							newLegalMoves[move] = 'a'
 						}
 					}
@@ -162,7 +171,7 @@ class Rook extends Piece {
                     if (space.isEmpty()) {
                         newLegalMoves[cur] = 'm'
                     } else {
-                        if (this.isEnemyWith(space.contents)) {
+                        if (this.isEnemyOf(space.contents)) {
                             newLegalMoves[cur] = 'a'
                         }
                         done = true
@@ -198,7 +207,7 @@ class Knight extends Piece {
 			if (Utils.isValidSpace(move)) {
 				let space = this.board.spaces[move]
                 if (!space.isEmpty()) {
-					if (this.isEnemyWith(space.contents)) {
+					if (this.isEnemyOf(space.contents)) {
 						newLegalMoves[move] = 'a'
 					}
 				} else {
@@ -237,7 +246,7 @@ class Bishop extends Piece {
                     if (space.isEmpty()) {
                         newLegalMoves[cur] = 'm'
                     } else {
-                        if (this.isEnemyWith(space.contents)) {
+                        if (this.isEnemyOf(space.contents)) {
                             newLegalMoves[cur] = 'a'
                         }
                         done = true
@@ -278,7 +287,7 @@ class Queen extends Piece {
                     if (space.isEmpty()) {
                         newLegalMoves[cur] = 'm'
                     } else {
-                        if (this.isEnemyWith(space.contents)) {
+                        if (this.isEnemyOf(space.contents)) {
                             newLegalMoves[cur] = 'a'
                         }
                         done = true
@@ -316,7 +325,7 @@ class King extends Piece {
                 if (space.isEmpty()) {
                     newLegalMoves[pos] = 'm'
                 } else {
-                    if (this.isEnemyWith(space.contents)) {
+                    if (this.isEnemyOf(space.contents)) {
                         newLegalMoves[pos] = 'a'
                     }
                 }
@@ -325,49 +334,4 @@ class King extends Piece {
 
 		this.legalMoves = newLegalMoves
 	}
-
-	// TODO this does no sanity checks for this.pos, because an invalid pos
-	// signals a bug elsewhere or a game that's already over
-    inCheck() {
-		// DEBUG allows inCheck to be called when game is technically "over"
-		if (this.alive == false) { 
-			return false
-		}
-
-        for (var dir in Utils.coordIncrementer) {
-            var cur = this.pos
-            var done = false 
-            while (!done) {
-                cur = Utils.coordIncrementer[dir](cur)
-                if (Utils.isValidSpace(cur)) {
-                    let space = this.board.spaces[cur]
-                    if (!space.isEmpty()) {
-                        let piece = space.contents
-                        if (piece.isEnemyWith(this)) {
-                            // TODO: less hacky legal move implementation
-                            piece.generateLegalMoves()
-                            if (piece.checkIfLegal(this.pos)) {
-                                return true
-                            }
-                        }
-                    }
-                } else {
-                    done = true
-                }
-            }
-        }
-
-        let knightCoords = Utils.knightCoords(this.pos)
-        for (var i=0; i<knightCoords.length; i++) {
-            let space = this.board.spaces[knightCoords[i]]
-            if (!space.isEmpty()) {
-                var piece = space.contents
-                if (piece.isEnemyWith(this) && piece.id[0] == 'N') {
-                    return true 
-                }
-            }
-        }
-
-        return false
-    }
 }

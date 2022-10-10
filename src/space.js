@@ -86,4 +86,8 @@ class Space {
             return false
         }
     }
+
+	getContents() {
+		return this.contents
+	}
 }
