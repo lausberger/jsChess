@@ -1,25 +1,22 @@
 // provides default functions for Piece objects
 class Piece {
-	constructor(board, id, position) {
-		this.board = board
+	constructor(id, position, clickHandler, spaceHandler) {
 		this.id = id
-		this.moveset = null
+		this.directions = []
 		this.pos = position
         this.legalMoves = {}
 		this.alive = true
 		this.element = document.createElement('img')
-		this.initializeElement()
+		this.initializeElement(clickHandler)
+		this.spaceHelper = spaceHandler
 	}
 
 	// creates corresponding html element and gives it a click function
-	initializeElement() {
+	initializeElement(func) {
 		this.element.className = 'piece'
 		this.element.id = this.id
 		this.element.style.opacity = 1
-		let _this = this
-		this.element.onclick = () => {
-            _this.board.select(_this)
-		}
+		this.element.onclick = () => func(this)
 	}
 
 	// cheap interface for pos variable with no sanity checking
@@ -28,8 +25,12 @@ class Piece {
 		this.pos = pos
 	}
 
-	getType() {
-		return this.id[0]
+	getPosition() {
+		return this.pos
+	}
+
+	getID() {
+		return this.id
 	}
 
 	// checks to see if a position is in this Piece's list of legal mvoes
@@ -40,11 +41,82 @@ class Piece {
         return false
     }
 
-	// each Piece subclass has a different way of checking for legal moves
-    // TODO: improve, right now it is called by both ChessBoard.select() and King.inCheck()
-    generateLegalMoves() {
-        throw new Error("generic move generation function called")
-    }
+	// generalized for all Pieces that can move any number of spaces in a direction
+	getPossibleMoves() {
+		let moves = []
+		for (var dir of this.directions) {
+			var cur = this.pos
+			var done = false
+			while (!done) {
+				cur = Utils.coordIncrementer[dir](cur)
+				if (Utils.isValidSpace(cur)) {
+					let space = this.spaceHelper(cur)
+					if (space.isEmpty()) {
+						moves.push(cur)
+					} else {
+						if (this.isEnemyOf(space.getContents())) {
+							moves.push(cur)
+						}
+						done = true
+					}
+				} else {
+					done = true
+				}	
+			}
+		}
+		return moves
+	}
+
+	// generalized for all Pieces
+	// TODO fragment by class
+	legalityFilter(possibleMoves) {
+		let moves = {}
+		for (var pos of possibleMoves) {
+			if (!Utils.isValidSpace(pos)) {
+				console.log('DEBUG')
+				console.log(possibleMoves)
+				console.log(this)
+			}
+			let space = this.spaceHelper(pos)
+			if (space.isEmpty()) {
+				if (this.getType() == "Pawn") {
+					if (pos[0] == this.getPosition()[0]) {
+						moves[pos] = 'm'
+					}
+				} else {
+					moves[pos] = 'm'
+				}
+			} else {
+				if (this.isEnemyOf(space.getContents())) {
+					if (this.getType() == "Pawn") {
+						if (pos[0] != this.getPosition()[0]) {
+							moves[pos] = 'a'
+						}
+					} else {
+						moves[pos] = 'a'
+					}
+				} else {
+					// TODO implement castling
+					if (this.getType() == "King") {
+						if (space.getContents().getType() == "Rook") {
+							// moves[pos] = 'c'
+						}
+					// TODO implement promotion
+					} else if (this.getType() == "Pawn") {
+						if (this == space.getContents()) {
+							// moves[pos] = 'p'
+						}
+					}
+				}
+			}
+		}
+		return moves
+	}
+
+	updateLegalMoves() {
+		let moves = this.getPossibleMoves()
+		this.legalMoves = this.legalityFilter(moves)
+	}
 
 	// checks whether a Piece belongs to the opposing team, used to find legal moves
 	isEnemyOf(otherPiece) {
@@ -62,20 +134,15 @@ class Piece {
 		return this.alive
 	}
 
-	getMoveset() {
-		return this.moveset
-	}
-
 	// does nothing unless Pawn
 	handleFirstMove() {
 	}
 }
 
 class Pawn extends Piece {
-	constructor(board, id, position) {
-		super(board, id, position)
+	constructor(id, position, clickFn, spaceFn) {
+		super(id, position, clickFn, spaceFn)
 		this.firstMove = true
-		this.moveset = ['pawn']
 		if (this.id[1] == 'w') {
 			this.img = 'pieces/plt60.png'
 		} else { // assumes color is 'b'
@@ -84,44 +151,26 @@ class Pawn extends Piece {
 		this.element.src = this.img
 	}
 
-    generateLegalMoves() {
-        // black pawns move down, white pawns move up
-        // TODO: if performance becomes an issue, check if piece has moved since last time
-        let dir = this.id[1] == 'w' ? 1 : -1
-        var newLegalMoves = {}
-		let possibleMoves = [
-			[Utils.coord(this.pos, 1, dir), 'a'],
-			[Utils.coord(this.pos, -1, dir), 'a'],
-			[Utils.coord(this.pos, 0, dir), 'm']
+	getType() {
+		return 'Pawn'
+	}
+
+	getPossibleMoves() {
+		var moves = [
+			Utils.coordIncrementer['up'](this.pos),
+			Utils.coordIncrementer['upleft'](this.pos),
+			Utils.coordIncrementer['upright'](this.pos)
 		]
-
-		for (var i=0; i<possibleMoves.length; i++) {
-			let move = possibleMoves[i][0]
-			let type = possibleMoves[i][1]
-			if (Utils.isValidSpace(move)) {
-				let space = this.board.spaces[move]
-				if (space.isEmpty()) {
-					if (type == 'm') {
-						newLegalMoves[move] = 'm'
-						if (this.firstMove) {
-							let move2 = Utils.coord(move, 0, dir)
-							if (this.board.spaces[move2].isEmpty()) {
-								newLegalMoves[move2] = 'm'
-							}
-						}
-					}
-				} else {
-					if (type == 'a') {
-						if (this.isEnemyOf(space.contents)) {
-							newLegalMoves[move] = 'a'
-						}
-					}
-				}	
-			}
+		moves = moves.filter(pos => Utils.isValidSpace(pos))
+		if (this.firstMove) {
+			moves.push(Utils.coordIncrementer['up'](moves[0]))
+		} 
+		// no on-board moves remaining signifies a Pawn promotion
+		if (moves.length == 0) {
+			moves.push(this.pos)
 		}
-
-        this.legalMoves = newLegalMoves
-    }
+		return moves
+	}
 
 	handleFirstMove() {
 		if (this.firstMove) {
@@ -131,9 +180,9 @@ class Pawn extends Piece {
 }
 
 class Rook extends Piece {
-	constructor(board, id, position) {
-		super(board, id, position)
-		this.moveset = ['up', 'down', 'left', 'right']
+	constructor(id, position, clickFn, spaceFn) {
+		super(id, position, clickFn, spaceFn)
+		this.directions = ['up', 'down', 'left', 'right']
 		if (this.id.charAt(1) == 'w') {
 			this.img = 'pieces/rlt60.png'
 		} else {
@@ -142,39 +191,14 @@ class Rook extends Piece {
 		this.element.src = this.img
 	}
 
-	generateLegalMoves() {
-		var newLegalMoves = {}
-
-		for (var i=0; i<this.moveset.length; i++) {
-            let dir = this.moveset[i]
-            var cur = this.pos
-            var done = false
-            while (!done) {
-                cur = Utils.coordIncrementer[dir](cur)
-                if (Utils.isValidSpace(cur)) {
-                    let space = this.board.spaces[cur]
-                    if (space.isEmpty()) {
-                        newLegalMoves[cur] = 'm'
-                    } else {
-                        if (this.isEnemyOf(space.contents)) {
-                            newLegalMoves[cur] = 'a'
-                        }
-                        done = true
-                    }
-                } else {
-					done = true
-				}
-            }
-        }
-
-		this.legalMoves = newLegalMoves
+	getType() {
+		return 'Rook'
 	}
 }
 
 class Knight extends Piece {
-	constructor(board, id, position) {
-		super(board, id, position)
-		this.moveset = ['knight']
+	constructor(id, position, clickFn, spaceFn) {
+		super(id, position, clickFn, spaceFn)
 		if (this.id.charAt(1) == 'w') {
 			this.img = 'pieces/nlt60.png'
 		} else {
@@ -183,32 +207,19 @@ class Knight extends Piece {
 		this.element.src = this.img
 	}
 
-	generateLegalMoves() {
-		var newLegalMoves = {}
-		let possibleMoves = Utils.knightCoords(this.pos)
+	getType() {
+		return 'Knight'
+	}
 
-		for (var i=0; i<possibleMoves.length; i++) {
-			let move = possibleMoves[i]
-			if (Utils.isValidSpace(move)) {
-				let space = this.board.spaces[move]
-                if (!space.isEmpty()) {
-					if (this.isEnemyOf(space.contents)) {
-						newLegalMoves[move] = 'a'
-					}
-				} else {
-					newLegalMoves[move] = 'm'
-				}
-			}
-		}
-
-		this.legalMoves = newLegalMoves
+	getPossibleMoves() {
+		return Utils.validKnightCoords(this.pos)
 	}
 }
 
 class Bishop extends Piece {
-	constructor(board, id, position) {
-		super(board, id, position)
-		this.moveset = ['upleft', 'upright', 'downleft', 'downright']
+	constructor(id, position, clickFn, spaceFn) {
+		super(id, position, clickFn, spaceFn)
+		this.directions = ['upleft', 'upright', 'downleft', 'downright']
 		if (this.id.charAt(1) == 'w') {
 			this.img = 'pieces/blt60.png'
 		} else {
@@ -217,39 +228,15 @@ class Bishop extends Piece {
 		this.element.src = this.img
 	}
 
-	generateLegalMoves() {
-		var newLegalMoves = {}
-
-		for (var i=0; i<this.moveset.length; i++) {
-            let dir = this.moveset[i]
-            var cur = this.pos
-            var done = false
-            while (!done) {
-                cur = Utils.coordIncrementer[dir](cur)
-                if (Utils.isValidSpace(cur)) {
-                    let space = this.board.spaces[cur]
-                    if (space.isEmpty()) {
-                        newLegalMoves[cur] = 'm'
-                    } else {
-                        if (this.isEnemyOf(space.contents)) {
-                            newLegalMoves[cur] = 'a'
-                        }
-                        done = true
-                    }
-                } else {
-					done = true
-				}
-            }
-        }
-
-		this.legalMoves = newLegalMoves
+	getType() {
+		return 'Bishop'
 	}
 }
 
 class Queen extends Piece {
-	constructor(board, id, position) {
-		super(board, id, position)
-		this.moveset = ['up', 'upleft', 'upright', 'down', 'downleft', 'downright', 'left', 'right']
+	constructor(id, position, clickFn, spaceFn) {
+		super(id, position, clickFn, spaceFn)
+		this.directions = ['up', 'upleft', 'upright', 'down', 'downleft', 'downright', 'left', 'right']
 		if (this.id.charAt(1) == 'w') {
 			this.img = 'pieces/qlt60.png'
 		} else {
@@ -258,39 +245,14 @@ class Queen extends Piece {
 		this.element.src = this.img
 	}
 
-	generateLegalMoves() {
-		var newLegalMoves = {}
-
-        for (var i=0; i<this.moveset.length; i++) {
-            let dir = this.moveset[i]
-            var cur = this.pos
-            var done = false
-            while (!done) {
-                cur = Utils.coordIncrementer[dir](cur)
-                if (Utils.isValidSpace(cur)) {
-                    let space = this.board.spaces[cur]
-                    if (space.isEmpty()) {
-                        newLegalMoves[cur] = 'm'
-                    } else {
-                        if (this.isEnemyOf(space.contents)) {
-                            newLegalMoves[cur] = 'a'
-                        }
-                        done = true
-                    }
-                } else {
-					done = true
-				}
-            }
-        }
-		
-		this.legalMoves = newLegalMoves
+	getType() {
+		return 'Queen'
 	}
 }
 
 class King extends Piece {
-	constructor(board, id, position) {
-		super(board, id, position)
-		this.moveset = ['up', 'upleft', 'upright', 'down', 'downleft', 'downright', 'left', 'right']
+	constructor(id, position, clickFn, spaceFn) {
+		super(id, position, clickFn, spaceFn)
 		if (this.id.charAt(1) == 'w') {
 			this.img = 'pieces/klt60.png'
 		} else {
@@ -299,24 +261,18 @@ class King extends Piece {
 		this.element.src = this.img
 	}
 
-	generateLegalMoves() {
-		var newLegalMoves = {}
+	getType() {
+		return 'King'
+	}
 
-        for (var i=0; i<this.moveset.length; i++) {
-            let dir = this.moveset[i]
-            let pos = Utils.coordIncrementer[dir](this.pos)
-            if (Utils.isValidSpace(pos)) {
-                let space = this.board.spaces[pos]
-                if (space.isEmpty()) {
-                    newLegalMoves[pos] = 'm'
-                } else {
-                    if (this.isEnemyOf(space.contents)) {
-                        newLegalMoves[pos] = 'a'
-                    }
-                }
-            }
-        }
-
-		this.legalMoves = newLegalMoves
+	getPossibleMoves() {
+		let moves = []
+		for (var dir in Utils.coordIncrementer) {
+			let cur = Utils.coordIncrementer[dir](this.pos)
+			if (Utils.isValidSpace(cur)) {
+				moves.push(cur)
+			}
+		}
+		return moves
 	}
 }

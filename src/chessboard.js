@@ -4,7 +4,7 @@ class ChessBoard {
 	constructor() { 
 		this.spaces = this.generateBoard()
         this.pieces = this.generatePieces()
-        this.selected = "none"
+        this.selected = 'none'
 		this.updateQueue = []
 		this.populateBoard()
         this.renderBoard()
@@ -14,15 +14,30 @@ class ChessBoard {
 	// #a3524e = burgundy
 	// #f2e8e7 = red-tinted white
 	generateBoard() {
+		const handleClick = (space) => {
+			if (this.selected != 'none') {
+				if (this.selected.getPosition() != space.id) {
+					// TODO an implementation that makes more sense, perhaps an 'Update' class object
+					// TODO third value is never used, just pass in this.selected and space.id
+					let update = ['move', this.selected.getID(), this.selected.getPosition(), space.id]
+					if (this.legalityCheck(update)) {
+						this.pushUpdate(update)
+						this.updateBoard()
+					} else {
+						console.log(`Illegal move attempted: ${this.selected.getID()} to ${space.id} from ${this.selected.getPosition()}`)
+					}
+				}
+			}
+		}
 		var spaces = {}
-		var switchColor = false
+		var switchColor = false	
 		for (var i in Utils.coordMatrix) {
 			for (var j in Utils.coordMatrix[i]) {
-				let key = Utils.coordMatrix[i][j]
-				spaces[key] = new Space(
-					this,
+				let coord = Utils.coordMatrix[i][j]
+				spaces[coord] = new Space(
 					switchColor === true ? '#a3524e' : '#f2e8e7', 
-					key
+					coord,
+					handleClick
                 )
 				switchColor = !switchColor
 			}
@@ -33,46 +48,52 @@ class ChessBoard {
 
 	// creates a dictionary of Piece objects
 	generatePieces() {
+		const clickFn = (piece) => {
+			this.select(piece)
+		}
+		const spaceFn = (pos) => {
+			return this.spaces[pos] || null
+		}
 		var pieces = {}
 		// black pawns
-		pieces['pb1'] = new Pawn(this, 'pb1', 'a7')
-		pieces['pb2'] = new Pawn(this, 'pb2', 'b7')
-		pieces['pb3'] = new Pawn(this, 'pb3', 'c7')
-		pieces['pb4'] = new Pawn(this, 'pb4', 'd7')
-		pieces['pb5'] = new Pawn(this, 'pb5', 'e7')
-		pieces['pb6'] = new Pawn(this, 'pb6', 'f7')
-		pieces['pb7'] = new Pawn(this, 'pb7', 'g7')
-		pieces['pb8'] = new Pawn(this, 'pb8', 'h7')
+		pieces['pb1'] = new Pawn('pb1', 'a7', clickFn, spaceFn)
+		pieces['pb2'] = new Pawn('pb2', 'b7', clickFn, spaceFn)
+		pieces['pb3'] = new Pawn('pb3', 'c7', clickFn, spaceFn)
+		pieces['pb4'] = new Pawn('pb4', 'd7', clickFn, spaceFn)
+		pieces['pb5'] = new Pawn('pb5', 'e7', clickFn, spaceFn)
+		pieces['pb6'] = new Pawn('pb6', 'f7', clickFn, spaceFn)
+		pieces['pb7'] = new Pawn('pb7', 'g7', clickFn, spaceFn)
+		pieces['pb8'] = new Pawn('pb8', 'h7', clickFn, spaceFn)
 
 		// black pieces
-		pieces['Rb1'] = new Rook(this, 'Rb1', 'a8')
-		pieces['Rb2'] = new Rook(this, 'Rb2', 'h8')
-		pieces['Nb1'] = new Knight(this, 'Nb1', 'b8')
-		pieces['Nb2'] = new Knight(this, 'Nb2', 'g8')
-		pieces['Bb1'] = new Bishop(this, 'Bb1', 'c8')
-		pieces['Bb2'] = new Bishop(this, 'Bb2', 'f8')
-		pieces['Qb'] = new Queen(this, 'Qb', 'd8')
-		pieces['Kb'] = new King(this, 'Kb', 'e8')
+		pieces['Rb1'] = new Rook('Rb1', 'a8', clickFn, spaceFn)
+		pieces['Rb2'] = new Rook('Rb2', 'h8', clickFn, spaceFn)
+		pieces['Nb1'] = new Knight('Nb1', 'b8', clickFn, spaceFn)
+		pieces['Nb2'] = new Knight('Nb2', 'g8', clickFn, spaceFn)
+		pieces['Bb1'] = new Bishop('Bb1', 'c8', clickFn, spaceFn)
+		pieces['Bb2'] = new Bishop('Bb2', 'f8', clickFn, spaceFn)
+		pieces['Qb'] = new Queen('Qb', 'd8', clickFn, spaceFn)
+		pieces['Kb'] = new King('Kb', 'e8', clickFn, spaceFn)
 		
 		// white pawns
-		pieces['pw1'] = new Pawn(this, 'pw1', 'a2')
-		pieces['pw2'] = new Pawn(this, 'pw2', 'b2')
-		pieces['pw3'] = new Pawn(this, 'pw3', 'c2')
-		pieces['pw4'] = new Pawn(this, 'pw4', 'd2')
-		pieces['pw5'] = new Pawn(this, 'pw5', 'e2')
-		pieces['pw6'] = new Pawn(this, 'pw6', 'f2')
-		pieces['pw7'] = new Pawn(this, 'pw7', 'g2')
-		pieces['pw8'] = new Pawn(this, 'pw8', 'h2')
+		pieces['pw1'] = new Pawn('pw1', 'a2', clickFn, spaceFn)
+		pieces['pw2'] = new Pawn('pw2', 'b2', clickFn, spaceFn)
+		pieces['pw3'] = new Pawn('pw3', 'c2', clickFn, spaceFn)
+		pieces['pw4'] = new Pawn('pw4', 'd2', clickFn, spaceFn)
+		pieces['pw5'] = new Pawn('pw5', 'e2', clickFn, spaceFn)
+		pieces['pw6'] = new Pawn('pw6', 'f2', clickFn, spaceFn)
+		pieces['pw7'] = new Pawn('pw7', 'g2', clickFn, spaceFn)
+		pieces['pw8'] = new Pawn('pw8', 'h2', clickFn, spaceFn)
 
 		// white pieces
-		pieces['Rw1'] = new Rook(this, 'Rw1', 'a1')
-		pieces['Rw2'] = new Rook(this, 'Rw2', 'h1')
-		pieces['Nw1'] = new Knight(this, 'Nw1', 'b1')
-		pieces['Nw2'] = new Knight(this, 'Nw2', 'g1')
-		pieces['Bw1'] = new Bishop(this, 'Bw1', 'c1')
-		pieces['Bw2'] = new Bishop(this, 'Bw2', 'f1')
-		pieces['Qw'] = new Queen(this, 'Qw', 'd1')
-		pieces['Kw'] = new King(this, 'Kw', 'e1')
+		pieces['Rw1'] = new Rook('Rw1', 'a1', clickFn, spaceFn)
+		pieces['Rw2'] = new Rook('Rw2', 'h1', clickFn, spaceFn)
+		pieces['Nw1'] = new Knight('Nw1', 'b1', clickFn, spaceFn)
+		pieces['Nw2'] = new Knight('Nw2', 'g1', clickFn, spaceFn)
+		pieces['Bw1'] = new Bishop('Bw1', 'c1', clickFn, spaceFn)
+		pieces['Bw2'] = new Bishop('Bw2', 'f1', clickFn, spaceFn)
+		pieces['Qw'] = new Queen('Qw', 'd1', clickFn, spaceFn)
+		pieces['Kw'] = new King('Kw', 'e1', clickFn, spaceFn)
 		
 		return pieces
 	}
@@ -82,6 +103,8 @@ class ChessBoard {
 	populateBoard() {
 		for (var p in this.pieces) {
 			let piece = this.pieces[p]
+			// it makes sense for addPieceToSpace() to be called here, but since 
+			// piece.pos doesn't need to change we can call addPiece directly
 			this.spaces[piece.pos].addPiece(piece)
 		}
 	}
@@ -103,7 +126,7 @@ class ChessBoard {
 	}
 
     // shows all of a Piece's legal moves in yellow
-    highlightSpaces(piece) {
+    highlightLegalMoves(piece) {
         for (var space in piece.legalMoves) {
             this.spaces[space].addHighlight() // TODO: make this work
         }
@@ -153,8 +176,9 @@ class ChessBoard {
         }
 		this.selected = piece
 		console.log(piece)
-    	piece.generateLegalMoves()
-        this.highlightSpaces(piece)
+    	piece.updateLegalMoves()
+        this.highlightLegalMoves(piece)
+		// TODO wrap this in another function
 		let holder = document.getElementById('holder')
 		let rPiece = document.getElementById(piece.id).cloneNode(true)
 		if (holder.firstChild) {
@@ -166,31 +190,76 @@ class ChessBoard {
 	// remove currently selected Piece from the holder element
 	deselect() {
         this.removeHighlights(this.selected)
-		this.selected = "none"
+		this.selected = 'none'
 		let holder = document.getElementById('holder')
 		holder.removeChild(holder.firstChild)
+	}
+
+	// given an update, returns true if it is legal or false otherwise
+	legalityCheck(update) {
+		let type = update[0]
+		// TODO implement getPieceByID() which performs a sanity check
+		let piece = this.pieces[update[1]]
+		let pos1 = update[2]
+		let pos2 = update[3]
+		return piece.checkIfLegal(pos2)
+	}
+
+	// callback function used in Piece.updateLegalMoves()
+	handleLegalityFiltering(piece, possibleMoves) {
+		moves = {}
+		for (var pos of possibleMoves) {
+			let space = this.spaces[pos]
+			if (space.isEmpty()) {
+				if (piece.getClass() == Pawn) {
+					if (pos[0] == piece.getPosition()[0]) {
+						moves[pos] = 'm'
+					}
+				} else {
+					moves[pos] = 'm'
+				}
+			} else {
+				if (piece.isEnemyOf(space.getContents())) {
+					if (piece.getClass() == Pawn) {
+						if (pos[0] != piece.getPosition()[0]) {
+							moves[pos] = 'a'
+						}
+					} else {
+						moves[pos] = 'a'
+					}
+				} else {
+					// TODO implement castling
+					if (piece.getClass() == King) {
+						if (space.getContents().getClass() == Rook) {
+							// moves[pos] = 'c'
+						}
+					// TODO implement promotion
+					} else if (piece.getClass() == Pawn) {
+						if (piece == space.getContents()) {
+							// moves[pos] = 'p'
+						}
+					}
+				}
+			}
+		}
+		return moves
 	}
 
 	// replacement for Piece.move(); performs a move or attack and returns the result
 	executeUpdate(update) {
 		let piece = this.pieces[update[1]]
 		let coord = update[3]
-		if (piece.checkIfLegal(coord)) {
-			let src = this.getSpaceOfPiece(piece)
-			let dst = this.spaces[coord]
-			// DEBUG ensures check highlighting doens't persist
-			// TODO decide if this sanity check needs to exist
-			if (piece.legalMoves[coord] == 'm' || piece.legalMoves[coord] == 'a') {
-				if (piece.getType() == 'K') {
-					src.removeHighlight()
-				}
-				return this.handleAction(src, dst)
-			} else { 
-				throw new Error("Unknown action type for " + piece.id + ": " + piece.legalMoves[coord])
+		let src = this.getSpaceOfPiece(piece)
+		let dst = this.spaces[coord]
+		// DEBUG ensures check highlighting doens't persist
+		// TODO decide if this sanity check needs to exist
+		if (piece.legalMoves[coord] == 'm' || piece.legalMoves[coord] == 'a') {
+			if (piece.getType() == 'King') {
+				src.removeHighlight()
 			}
-		} else {
-			// DEBUG
-			console.log(`Illegal move attempted: ${piece.id} to ${coord} from ${piece.pos}`)
+			return this.handleAction(src, dst)
+		} else { 
+			throw new Error('Unknown action type for ' + piece.id + ': ' + piece.legalMoves[coord])
 		}
 	}
 
@@ -205,10 +274,10 @@ class ChessBoard {
 			// TODO more OO implementation?
 			pieceA.handleFirstMove()
 			// TODO DEBUG better implementation that doesn't require this to be here
-			if (pieceA.getType() == 'K') {
+			if (pieceA.getType() == 'King') {
 				src.removeHighlight()
 			}
-			if (pieceB.getType() == 'K') {
+			if (pieceB.getType() == 'King') {
 				dst.removeHighlight()
 			}
 			// DEBUG
@@ -223,16 +292,16 @@ class ChessBoard {
 			return true
 		} else {
 			// DEBUG
-			console.log("something has gone horribly wrong during action")
-			console.log("Source space:")
+			console.log('something has gone horribly wrong during action')
+			console.log('Source space:')
 			console.log(src)
-			console.log("Destination space:")
+			console.log('Destination space:')
 			console.log(dst)
 			return false
 		}
 	}
 
-	kingsCheckStatus() {
+	kingsCheckStatuses() {
 		var result = {}
 		let kings = [this.pieces['Kw'], this.pieces['Kb']]
 		for (var k of kings) {
@@ -251,23 +320,23 @@ class ChessBoard {
 						if (!s.isEmpty()) {
 							let p = s.getContents()
 							if (p.isEnemyOf(k)) {
-								p.generateLegalMoves()
+								p.updateLegalMoves()
 								if (p.checkIfLegal(k.pos)) {
 									result[k.id] = true
-									done = true
 								}
 							}
+							done = true
 						}
 					} else {
 						done = true
 					}
 				}
 			}
-			for (var c of Utils.knightCoords(k.pos)) {
+			for (var c of Utils.validKnightCoords(k.pos)) {
 				let s = this.spaces[c]
 				if (!s.isEmpty()) {
 					let p = s.getContents()
-					if (p.isEnemyOf(k) && p.getType() == 'N') {
+					if (p.isEnemyOf(k) && p.getType() == 'Knight') {
 						result[k.id] = true
 						break
 					}
@@ -279,7 +348,7 @@ class ChessBoard {
 
 	// updates the appearance of King Spaces if in check
 	updateCheckHighlighting() {
-		for (let [k, inCheck] of Object.entries(this.kingsCheckStatus())) {
+		for (let [k, inCheck] of Object.entries(this.kingsCheckStatuses())) {
 			let p = this.pieces[k]
 			let s = this.getSpaceOfPiece(p)
 			if (inCheck) {

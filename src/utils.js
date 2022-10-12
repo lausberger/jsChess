@@ -67,7 +67,7 @@ class Utils {
     }
 
     // returns a list of all positions a knight could attack from
-    static knightCoords(pos) {
+    static validKnightCoords(pos) {
         var positions = [
 			this.coord(pos, 1, 2),
 			this.coord(pos, -1, 2),
