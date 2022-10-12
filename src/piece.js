@@ -67,46 +67,16 @@ class Piece {
 		return moves
 	}
 
-	// generalized for all Pieces
-	// TODO fragment by class
+	// generalized for most Pieces
 	legalityFilter(possibleMoves) {
 		let moves = {}
 		for (var pos of possibleMoves) {
-			if (!Utils.isValidSpace(pos)) {
-				console.log('DEBUG')
-				console.log(possibleMoves)
-				console.log(this)
-			}
 			let space = this.spaceHelper(pos)
 			if (space.isEmpty()) {
-				if (this.getType() == "Pawn") {
-					if (pos[0] == this.getPosition()[0]) {
-						moves[pos] = 'm'
-					}
-				} else {
-					moves[pos] = 'm'
-				}
+				moves[pos] = 'm'
 			} else {
 				if (this.isEnemyOf(space.getContents())) {
-					if (this.getType() == "Pawn") {
-						if (pos[0] != this.getPosition()[0]) {
-							moves[pos] = 'a'
-						}
-					} else {
-						moves[pos] = 'a'
-					}
-				} else {
-					// TODO implement castling
-					if (this.getType() == "King") {
-						if (space.getContents().getType() == "Rook") {
-							// moves[pos] = 'c'
-						}
-					// TODO implement promotion
-					} else if (this.getType() == "Pawn") {
-						if (this == space.getContents()) {
-							// moves[pos] = 'p'
-						}
-					}
+					moves[pos] = 'a'
 				}
 			}
 		}
@@ -156,18 +126,44 @@ class Pawn extends Piece {
 	}
 
 	getPossibleMoves() {
+		// forward is relative
+		let fwd = this.id[1] == 'w' ? 'up' : 'down'
 		var moves = [
-			Utils.coordIncrementer['up'](this.pos),
-			Utils.coordIncrementer['upleft'](this.pos),
-			Utils.coordIncrementer['upright'](this.pos)
+			Utils.coordIncrementer[fwd](this.pos),
+			Utils.coordIncrementer[fwd+'left'](this.pos),
+			Utils.coordIncrementer[fwd+'right'](this.pos)
 		]
 		moves = moves.filter(pos => Utils.isValidSpace(pos))
-		if (this.firstMove) {
-			moves.push(Utils.coordIncrementer['up'](moves[0]))
+		// not ideal, but some filtering here is the most elegant option
+		if (this.firstMove && this.spaceHelper(moves[0]).isEmpty()) {
+			moves.push(Utils.coordIncrementer[fwd](moves[0]))
 		} 
 		// no on-board moves remaining signifies a Pawn promotion
+		// TODO this adds a move but does not highlight or execute properly
 		if (moves.length == 0) {
 			moves.push(this.pos)
+		}
+		return moves
+	}
+
+	legalityFilter(possibleMoves) {
+		let moves = {}
+		for (var pos of possibleMoves) {
+			let space = this.spaceHelper(pos)
+			if (space.isEmpty()) {
+				if (pos[0] == this.getPosition()[0]) {
+					moves[pos] = 'm'
+				}
+			} else {
+				if (this.isEnemyOf(space.getContents())) {
+					if (pos[0] != this.getPosition()[0]) {
+						moves[pos] = 'a'
+					}
+				// TODO implement promotion
+				} else if (this == space.getContents()) {
+					// moves[pos] = 'p'
+				}
+			}
 		}
 		return moves
 	}
@@ -271,6 +267,26 @@ class King extends Piece {
 			let cur = Utils.coordIncrementer[dir](this.pos)
 			if (Utils.isValidSpace(cur)) {
 				moves.push(cur)
+			}
+		}
+		return moves
+	}
+
+	legalityFilter(possibleMoves) {
+		let moves = {}
+		for (var pos of possibleMoves) {
+			let space = this.spaceHelper(pos)
+			if (space.isEmpty()) {
+				moves[pos] = 'm'
+			} else {
+				if (this.isEnemyOf(space.getContents())) {
+					moves[pos] = 'a'
+				} else {
+					// TODO implement castling
+					if (space.getContents().getType() == "Rook") {
+						// moves[pos] = 'c'
+					}
+				}
 			}
 		}
 		return moves

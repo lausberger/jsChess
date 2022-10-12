@@ -134,8 +134,9 @@ class ChessBoard {
 
 	// returns all of a Piece's legal moves to their default color
     removeHighlights(piece) {
-        for (var space in piece.legalMoves) {
-            this.spaces[space].removeHighlight()
+        for (var pos in piece.legalMoves) {
+			// TODO better way of fixing highlight bug
+			this.spaces[pos].removeHighlight()
         }
     }
 
@@ -203,46 +204,6 @@ class ChessBoard {
 		let pos1 = update[2]
 		let pos2 = update[3]
 		return piece.checkIfLegal(pos2)
-	}
-
-	// callback function used in Piece.updateLegalMoves()
-	handleLegalityFiltering(piece, possibleMoves) {
-		moves = {}
-		for (var pos of possibleMoves) {
-			let space = this.spaces[pos]
-			if (space.isEmpty()) {
-				if (piece.getClass() == Pawn) {
-					if (pos[0] == piece.getPosition()[0]) {
-						moves[pos] = 'm'
-					}
-				} else {
-					moves[pos] = 'm'
-				}
-			} else {
-				if (piece.isEnemyOf(space.getContents())) {
-					if (piece.getClass() == Pawn) {
-						if (pos[0] != piece.getPosition()[0]) {
-							moves[pos] = 'a'
-						}
-					} else {
-						moves[pos] = 'a'
-					}
-				} else {
-					// TODO implement castling
-					if (piece.getClass() == King) {
-						if (space.getContents().getClass() == Rook) {
-							// moves[pos] = 'c'
-						}
-					// TODO implement promotion
-					} else if (piece.getClass() == Pawn) {
-						if (piece == space.getContents()) {
-							// moves[pos] = 'p'
-						}
-					}
-				}
-			}
-		}
-		return moves
 	}
 
 	// replacement for Piece.move(); performs a move or attack and returns the result

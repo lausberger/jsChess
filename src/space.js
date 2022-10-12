@@ -6,6 +6,10 @@ class Space {
 		this.contents = 'empty'
 		this.element = document.createElement('div')
 		this.initializeElement(clickHandler)
+		// temporary highlighting when in check bug fix
+		// TODO more intuitive way to do this? i.e. bgColor
+		this.isRed = false
+		this.wasRed = false
 	}
 
 	// creates the html element that is tied to this object
@@ -19,16 +23,29 @@ class Space {
 	// turns this space yellow to show a piece's legal moves
     addHighlight() {
 		this.element.style.backgroundColor = '#FDFF47'
+		if (this.isRed) {
+			this.isRed = false
+			this.wasRed = true
+		}
     }
 
     // DEBUG only used to show a king in check
     redden() {
         this.element.style.backgroundColor = '#FF0000'
+		this.isRed = true
+		this.wasRed = false
     }
 
 	// restores this space to its normal color
     removeHighlight() {
-		this.element.style.backgroundColor = this.color
+		// TODO reimplement to not require this. otherwise it removes red
+		if (!this.isRed && this.wasRed) {
+			this.redden()
+		} else {
+			this.element.style.backgroundColor = this.color
+			this.isRed = false
+			this.wasRed = false
+		}
     }
     
 	// places a Piece in this space
