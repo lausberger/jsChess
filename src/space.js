@@ -14,7 +14,7 @@ class Space {
 
 	// must be called before elementOnClick can be used
 	static setElementOnClickCallback(func) {
-		Space.elementOnClick = func
+		super.elementOnClick = func
 	}
 
 	// creates the html element that is tied to this object

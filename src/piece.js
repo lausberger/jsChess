@@ -12,12 +12,12 @@ class Piece {
 
 	// must be called before spaceHelper can be used
 	static setSpaceCheckCallback(func) {
-		Piece.spaceHelper = func
+		super.spaceHelper = func
 	}
 
 	// must be called before elementOnClick can be used
 	static setElementSelectionCallback(func) {
-		Piece.elementOnClick = func
+		super.elementOnClick = func
 	}
 
 	// creates corresponding html element and gives it a click function
