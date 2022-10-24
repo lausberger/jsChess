@@ -1,23 +1,28 @@
 // represents one space on a ChessBoard
 class Space {
-	constructor(color, id, clickHandler) {
+	constructor(color, id) {
 		this.color = color
 		this.id = id
 		this.contents = 'empty'
 		this.element = document.createElement('div')
-		this.initializeElement(clickHandler)
+		this.initializeElement()
 		// temporary highlighting when in check bug fix
 		// TODO more intuitive way to do this? i.e. bgColor
 		this.isRed = false
 		this.wasRed = false
 	}
 
+	// must be called before elementOnClick can be used
+	static setElementOnClickCallback(func) {
+		Space.elementOnClick = func
+	}
+
 	// creates the html element that is tied to this object
-	initializeElement(func) {
+	initializeElement() {
 		this.element.className = 'space'
 		this.element.id = this.id
 		this.element.style.backgroundColor = this.color
-		this.element.onclick = () => func(this)
+		this.element.onclick = () => Space.elementOnClick(this)
 	}
 
 	// turns this space yellow to show a piece's legal moves

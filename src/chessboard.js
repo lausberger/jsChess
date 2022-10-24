@@ -30,6 +30,7 @@ class ChessBoard {
 				}
 			}
 		}
+		Space.setElementOnClickCallback(handleClick)
 		var spaces = {}
 		var switchColor = false	
 		for (var i in Utils.coordMatrix) {
@@ -37,8 +38,7 @@ class ChessBoard {
 				let coord = Utils.coordMatrix[i][j]
 				spaces[coord] = new Space(
 					switchColor === true ? '#a3524e' : '#f2e8e7', 
-					coord,
-					handleClick
+					coord
                 )
 				switchColor = !switchColor
 			}

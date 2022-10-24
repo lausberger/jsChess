@@ -10,22 +10,14 @@ class Piece {
 		this.initializeElement()
 	}
 
-	// overrides the spaceHelper instance method of each Piece
+	// must be called before spaceHelper can be used
 	static setSpaceCheckCallback(func) {
-		this.prototype.spaceHelper = func
+		Piece.spaceHelper = func
 	}
 
-	// overrides the _elementOnClick instance method of each Piece
+	// must be called before elementOnClick can be used
 	static setElementSelectionCallback(func) {
-		this.prototype._elementOnClick = func
-	}
-
-	spaceHelper() {
-		throw new Error("Piece spaceHelper was never overwritten")
-	}
-
-	_elementOnClick(arg) {
-		throw new Error("Piece elementOnClick was never overwritten")
+		Piece.elementOnClick = func
 	}
 
 	// creates corresponding html element and gives it a click function
@@ -33,7 +25,7 @@ class Piece {
 		this.element.className = 'piece'
 		this.element.id = this.id
 		this.element.style.opacity = 1
-		this.element.onclick = () => this._elementOnClick(this)
+		this.element.onclick = () => Piece.elementOnClick(this)
 	}
 
 	// cheap interface for pos variable with no sanity checking
@@ -67,7 +59,7 @@ class Piece {
 			while (!done) {
 				cur = Utils.coordIncrementer[dir](cur)
 				if (Utils.isValidSpace(cur)) {
-					let space = this.spaceHelper(cur)
+					let space = Piece.spaceHelper(cur)
 					if (space.isEmpty()) {
 						moves.push(cur)
 					} else {
@@ -88,7 +80,7 @@ class Piece {
 	legalityFilter(possibleMoves) {
 		let moves = {}
 		for (var pos of possibleMoves) {
-			let space = this.spaceHelper(pos)
+			let space = Piece.spaceHelper(pos)
 			if (space.isEmpty()) {
 				moves[pos] = 'm'
 			} else {
@@ -152,7 +144,7 @@ class Pawn extends Piece {
 		]
 		moves = moves.filter(pos => Utils.isValidSpace(pos))
 		// not ideal, but some filtering here is the most elegant option
-		if (this.firstMove && this.spaceHelper(moves[0]).isEmpty()) {
+		if (this.firstMove && Piece.spaceHelper(moves[0]).isEmpty()) {
 			moves.push(Utils.coordIncrementer[fwd](moves[0]))
 		} 
 		// no on-board moves remaining signifies a Pawn promotion
@@ -166,7 +158,7 @@ class Pawn extends Piece {
 	legalityFilter(possibleMoves) {
 		let moves = {}
 		for (var pos of possibleMoves) {
-			let space = this.spaceHelper(pos)
+			let space = Piece.spaceHelper(pos)
 			if (space.isEmpty()) {
 				if (pos[0] == this.getPosition()[0]) {
 					moves[pos] = 'm'
@@ -292,7 +284,7 @@ class King extends Piece {
 	legalityFilter(possibleMoves) {
 		let moves = {}
 		for (var pos of possibleMoves) {
-			let space = this.spaceHelper(pos)
+			let space = Piece.spaceHelper(pos)
 			if (space.isEmpty()) {
 				moves[pos] = 'm'
 			} else {
