@@ -28,6 +28,10 @@ class Piece {
 		this.element.onclick = () => Piece.elementOnClick(this)
 	}
 
+	setLegalMoves(moves) {
+		this.legalMoves = moves
+	}
+
 	// cheap interface for pos variable with no sanity checking
 	// TODO decide if sanity check is needed
 	setPosition(pos) {
@@ -43,7 +47,7 @@ class Piece {
 	}
 
 	// checks to see if a position is in this Piece's list of legal mvoes
-    checkIfLegal(position) {
+    canMoveTo(position) {
         if (this.legalMoves[position]) {
             return true
         }
@@ -76,27 +80,6 @@ class Piece {
 		return moves
 	}
 
-	// generalized for most Pieces
-	legalityFilter(possibleMoves) {
-		let moves = {}
-		for (var pos of possibleMoves) {
-			let space = Piece.spaceHelper(pos)
-			if (space.isEmpty()) {
-				moves[pos] = 'm'
-			} else {
-				if (this.isEnemyOf(space.getContents())) {
-					moves[pos] = 'a'
-				}
-			}
-		}
-		return moves
-	}
-
-	updateLegalMoves() {
-		let moves = this.getPossibleMoves()
-		this.legalMoves = this.legalityFilter(moves)
-	}
-
 	// checks whether a Piece belongs to the opposing team, used to find legal moves
 	isEnemyOf(otherPiece) {
 		if (this.id[1] != otherPiece.id[1]) {
@@ -114,8 +97,7 @@ class Piece {
 	}
 
 	// does nothing unless Pawn
-	handleFirstMove() {
-	}
+	handleFirstMove() {}
 }
 
 class Pawn extends Piece {
@@ -151,28 +133,6 @@ class Pawn extends Piece {
 		// TODO this adds a move but does not highlight or execute properly
 		if (moves.length == 0) {
 			moves.push(this.pos)
-		}
-		return moves
-	}
-
-	legalityFilter(possibleMoves) {
-		let moves = {}
-		for (var pos of possibleMoves) {
-			let space = Piece.spaceHelper(pos)
-			if (space.isEmpty()) {
-				if (pos[0] == this.getPosition()[0]) {
-					moves[pos] = 'm'
-				}
-			} else {
-				if (this.isEnemyOf(space.getContents())) {
-					if (pos[0] != this.getPosition()[0]) {
-						moves[pos] = 'a'
-					}
-				// TODO implement promotion
-				} else if (this == space.getContents()) {
-					// moves[pos] = 'p'
-				}
-			}
 		}
 		return moves
 	}
@@ -276,26 +236,6 @@ class King extends Piece {
 			let cur = Utils.coordIncrementer[dir](this.pos)
 			if (Utils.isValidSpace(cur)) {
 				moves.push(cur)
-			}
-		}
-		return moves
-	}
-
-	legalityFilter(possibleMoves) {
-		let moves = {}
-		for (var pos of possibleMoves) {
-			let space = Piece.spaceHelper(pos)
-			if (space.isEmpty()) {
-				moves[pos] = 'm'
-			} else {
-				if (this.isEnemyOf(space.getContents())) {
-					moves[pos] = 'a'
-				} else {
-					// TODO implement castling
-					if (space.getContents().getType() == "Rook") {
-						// moves[pos] = 'c'
-					}
-				}
 			}
 		}
 		return moves

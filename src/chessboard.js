@@ -179,7 +179,7 @@ class ChessBoard {
         }
 		this.selected = piece
 		console.log(piece)
-    	piece.updateLegalMoves()
+		this.updateMovesOf(piece)
         this.highlightLegalMoves(piece)
 		// TODO wrap this in another function
 		let holder = document.getElementById('holder')
@@ -205,7 +205,7 @@ class ChessBoard {
 		let piece = this.pieces[update[1]]
 		let pos1 = update[2]
 		let pos2 = update[3]
-		return piece.checkIfLegal(pos2)
+		return piece.canMoveTo(pos2)
 	}
 
 	// replacement for Piece.move(); performs a move or attack and returns the result
@@ -283,8 +283,8 @@ class ChessBoard {
 						if (!s.isEmpty()) {
 							let p = s.getContents()
 							if (p.isEnemyOf(k)) {
-								p.updateLegalMoves()
-								if (p.checkIfLegal(k.pos)) {
+								this.updateMovesOf(p)
+								if (p.canMoveTo(k.pos)) {
 									result[k.id] = true
 								}
 							}
@@ -342,5 +342,66 @@ class ChessBoard {
 		}
         // DEBUG this is only for testing, for now
 		this.updateCheckHighlighting()
+	}
+
+	updateMovesOf(piece) {
+		let moves = this.computeLegalMovesOf(piece)
+		piece.setLegalMoves(moves)
+	}
+
+	computeLegalMovesOf(piece) {
+		let filteredMoves = {}
+		let possibleMoves = piece.getPossibleMoves()
+		// slightly different algorithm for Pieces with special moves
+		switch (piece.getType()) {
+			case 'Pawn':
+				for (var pos of possibleMoves) {
+					let space = this.spaces[pos]
+					if (space.isEmpty()) {
+						if (pos[0] == piece.getPosition()[0]) {
+							filteredMoves[pos] = 'm'
+						}
+					} else {
+						if (piece.isEnemyOf(space.getContents())) {
+							if (pos[0] != piece.getPosition()[0]) {
+								filteredMoves[pos] = 'a'
+							}
+						// TODO implement promotion
+						} else if (piece == space.getContents()) {
+							// filteredMoves[pos] = 'p'
+						}
+					}
+				}
+				break
+			case 'King':
+				for (var pos of possibleMoves) {
+					let space = this.spaces[pos]
+					if (space.isEmpty()) {
+						filteredMoves[pos] = 'm'
+					} else {
+						if (piece.isEnemyOf(space.getContents())) {
+							filteredMoves[pos] = 'a'
+						} else {
+							// TODO implement castling
+							if (space.getContents().getType() == "Rook") {
+								// filteredMoves[pos] = 'c'
+							}
+						}
+					}
+				}
+				break
+			default:
+				for (var pos of possibleMoves) {
+					let space = this.spaces[pos]
+					if (space.isEmpty()) {
+						filteredMoves[pos] = 'm'
+					} else {
+						if (piece.isEnemyOf(space.getContents())) {
+							filteredMoves[pos] = 'a'
+						}
+					}
+				}
+		}
+		return filteredMoves
 	}
 }
