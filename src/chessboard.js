@@ -2,6 +2,7 @@
 class ChessBoard {
 	// create an 8 by 8 chessboard
 	constructor() { 
+		this.testprop = 'CHESSBOARD'
 		this.spaces = this.generateBoard()
         this.pieces = this.generatePieces()
         this.selected = 'none'
@@ -48,52 +49,53 @@ class ChessBoard {
 
 	// creates a dictionary of Piece objects
 	generatePieces() {
-		const clickFn = (piece) => {
-			this.select(piece)
-		}
-		const spaceFn = (pos) => {
-			return this.spaces[pos] || null
-		}
+		// lets a Piece's element select itself on click
+		const clickFn = (piece) => { this.select(piece) }
+		// lets a Piece check the contents of a Space
+		const spaceFn = (pos) => { return this.spaces[pos] || null }
+		// set both functions as Piece instance methods
+		Piece.setElementSelectionCallback(clickFn)
+		Piece.setSpaceCheckCallback(spaceFn)
 		var pieces = {}
 		// black pawns
-		pieces['pb1'] = new Pawn('pb1', 'a7', clickFn, spaceFn)
-		pieces['pb2'] = new Pawn('pb2', 'b7', clickFn, spaceFn)
-		pieces['pb3'] = new Pawn('pb3', 'c7', clickFn, spaceFn)
-		pieces['pb4'] = new Pawn('pb4', 'd7', clickFn, spaceFn)
-		pieces['pb5'] = new Pawn('pb5', 'e7', clickFn, spaceFn)
-		pieces['pb6'] = new Pawn('pb6', 'f7', clickFn, spaceFn)
-		pieces['pb7'] = new Pawn('pb7', 'g7', clickFn, spaceFn)
-		pieces['pb8'] = new Pawn('pb8', 'h7', clickFn, spaceFn)
+		pieces['pb1'] = new Pawn('pb1', 'a7')
+		pieces['pb2'] = new Pawn('pb2', 'b7')
+		pieces['pb3'] = new Pawn('pb3', 'c7')
+		pieces['pb4'] = new Pawn('pb4', 'd7')
+		pieces['pb5'] = new Pawn('pb5', 'e7')
+		pieces['pb6'] = new Pawn('pb6', 'f7')
+		pieces['pb7'] = new Pawn('pb7', 'g7')
+		pieces['pb8'] = new Pawn('pb8', 'h7')
 
 		// black pieces
-		pieces['Rb1'] = new Rook('Rb1', 'a8', clickFn, spaceFn)
-		pieces['Rb2'] = new Rook('Rb2', 'h8', clickFn, spaceFn)
-		pieces['Nb1'] = new Knight('Nb1', 'b8', clickFn, spaceFn)
-		pieces['Nb2'] = new Knight('Nb2', 'g8', clickFn, spaceFn)
-		pieces['Bb1'] = new Bishop('Bb1', 'c8', clickFn, spaceFn)
-		pieces['Bb2'] = new Bishop('Bb2', 'f8', clickFn, spaceFn)
-		pieces['Qb'] = new Queen('Qb', 'd8', clickFn, spaceFn)
-		pieces['Kb'] = new King('Kb', 'e8', clickFn, spaceFn)
+		pieces['Rb1'] = new Rook('Rb1', 'a8')
+		pieces['Rb2'] = new Rook('Rb2', 'h8')
+		pieces['Nb1'] = new Knight('Nb1', 'b8')
+		pieces['Nb2'] = new Knight('Nb2', 'g8')
+		pieces['Bb1'] = new Bishop('Bb1', 'c8')
+		pieces['Bb2'] = new Bishop('Bb2', 'f8')
+		pieces['Qb'] = new Queen('Qb', 'd8')
+		pieces['Kb'] = new King('Kb', 'e8')
 		
 		// white pawns
-		pieces['pw1'] = new Pawn('pw1', 'a2', clickFn, spaceFn)
-		pieces['pw2'] = new Pawn('pw2', 'b2', clickFn, spaceFn)
-		pieces['pw3'] = new Pawn('pw3', 'c2', clickFn, spaceFn)
-		pieces['pw4'] = new Pawn('pw4', 'd2', clickFn, spaceFn)
-		pieces['pw5'] = new Pawn('pw5', 'e2', clickFn, spaceFn)
-		pieces['pw6'] = new Pawn('pw6', 'f2', clickFn, spaceFn)
-		pieces['pw7'] = new Pawn('pw7', 'g2', clickFn, spaceFn)
-		pieces['pw8'] = new Pawn('pw8', 'h2', clickFn, spaceFn)
+		pieces['pw1'] = new Pawn('pw1', 'a2')
+		pieces['pw2'] = new Pawn('pw2', 'b2')
+		pieces['pw3'] = new Pawn('pw3', 'c2')
+		pieces['pw4'] = new Pawn('pw4', 'd2')
+		pieces['pw5'] = new Pawn('pw5', 'e2')
+		pieces['pw6'] = new Pawn('pw6', 'f2')
+		pieces['pw7'] = new Pawn('pw7', 'g2')
+		pieces['pw8'] = new Pawn('pw8', 'h2')
 
 		// white pieces
-		pieces['Rw1'] = new Rook('Rw1', 'a1', clickFn, spaceFn)
-		pieces['Rw2'] = new Rook('Rw2', 'h1', clickFn, spaceFn)
-		pieces['Nw1'] = new Knight('Nw1', 'b1', clickFn, spaceFn)
-		pieces['Nw2'] = new Knight('Nw2', 'g1', clickFn, spaceFn)
-		pieces['Bw1'] = new Bishop('Bw1', 'c1', clickFn, spaceFn)
-		pieces['Bw2'] = new Bishop('Bw2', 'f1', clickFn, spaceFn)
-		pieces['Qw'] = new Queen('Qw', 'd1', clickFn, spaceFn)
-		pieces['Kw'] = new King('Kw', 'e1', clickFn, spaceFn)
+		pieces['Rw1'] = new Rook('Rw1', 'a1')
+		pieces['Rw2'] = new Rook('Rw2', 'h1')
+		pieces['Nw1'] = new Knight('Nw1', 'b1')
+		pieces['Nw2'] = new Knight('Nw2', 'g1')
+		pieces['Bw1'] = new Bishop('Bw1', 'c1')
+		pieces['Bw2'] = new Bishop('Bw2', 'f1')
+		pieces['Qw'] = new Queen('Qw', 'd1')
+		pieces['Kw'] = new King('Kw', 'e1')
 		
 		return pieces
 	}

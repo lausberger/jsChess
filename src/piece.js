@@ -1,22 +1,39 @@
 // provides default functions for Piece objects
 class Piece {
-	constructor(id, position, clickHandler, spaceHandler) {
+	constructor(id, position) {
 		this.id = id
 		this.directions = []
 		this.pos = position
         this.legalMoves = {}
 		this.alive = true
 		this.element = document.createElement('img')
-		this.initializeElement(clickHandler)
-		this.spaceHelper = spaceHandler
+		this.initializeElement()
+	}
+
+	// overrides the spaceHelper instance method of each Piece
+	static setSpaceCheckCallback(func) {
+		this.prototype.spaceHelper = func
+	}
+
+	// overrides the _elementOnClick instance method of each Piece
+	static setElementSelectionCallback(func) {
+		this.prototype._elementOnClick = func
+	}
+
+	spaceHelper() {
+		throw new Error("Piece spaceHelper was never overwritten")
+	}
+
+	_elementOnClick(arg) {
+		throw new Error("Piece elementOnClick was never overwritten")
 	}
 
 	// creates corresponding html element and gives it a click function
-	initializeElement(func) {
+	initializeElement() {
 		this.element.className = 'piece'
 		this.element.id = this.id
 		this.element.style.opacity = 1
-		this.element.onclick = () => func(this)
+		this.element.onclick = () => this._elementOnClick(this)
 	}
 
 	// cheap interface for pos variable with no sanity checking
@@ -110,8 +127,8 @@ class Piece {
 }
 
 class Pawn extends Piece {
-	constructor(id, position, clickFn, spaceFn) {
-		super(id, position, clickFn, spaceFn)
+	constructor(id, position) {
+		super(id, position)
 		this.firstMove = true
 		if (this.id[1] == 'w') {
 			this.img = 'pieces/plt60.png'
@@ -176,8 +193,8 @@ class Pawn extends Piece {
 }
 
 class Rook extends Piece {
-	constructor(id, position, clickFn, spaceFn) {
-		super(id, position, clickFn, spaceFn)
+	constructor(id, position) {
+		super(id, position)
 		this.directions = ['up', 'down', 'left', 'right']
 		if (this.id.charAt(1) == 'w') {
 			this.img = 'pieces/rlt60.png'
@@ -193,8 +210,8 @@ class Rook extends Piece {
 }
 
 class Knight extends Piece {
-	constructor(id, position, clickFn, spaceFn) {
-		super(id, position, clickFn, spaceFn)
+	constructor(id, position) {
+		super(id, position)
 		if (this.id.charAt(1) == 'w') {
 			this.img = 'pieces/nlt60.png'
 		} else {
@@ -213,8 +230,8 @@ class Knight extends Piece {
 }
 
 class Bishop extends Piece {
-	constructor(id, position, clickFn, spaceFn) {
-		super(id, position, clickFn, spaceFn)
+	constructor(id, position) {
+		super(id, position)
 		this.directions = ['upleft', 'upright', 'downleft', 'downright']
 		if (this.id.charAt(1) == 'w') {
 			this.img = 'pieces/blt60.png'
@@ -230,8 +247,8 @@ class Bishop extends Piece {
 }
 
 class Queen extends Piece {
-	constructor(id, position, clickFn, spaceFn) {
-		super(id, position, clickFn, spaceFn)
+	constructor(id, position) {
+		super(id, position)
 		this.directions = ['up', 'upleft', 'upright', 'down', 'downleft', 'downright', 'left', 'right']
 		if (this.id.charAt(1) == 'w') {
 			this.img = 'pieces/qlt60.png'
@@ -247,8 +264,8 @@ class Queen extends Piece {
 }
 
 class King extends Piece {
-	constructor(id, position, clickFn, spaceFn) {
-		super(id, position, clickFn, spaceFn)
+	constructor(id, position) {
+		super(id, position)
 		if (this.id.charAt(1) == 'w') {
 			this.img = 'pieces/klt60.png'
 		} else {
