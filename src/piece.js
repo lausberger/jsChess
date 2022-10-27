@@ -1,15 +1,5 @@
 // provides default functions for Piece objects
 class Piece {
-	constructor(id, position) {
-		this.id = id
-		this.directions = []
-		this.pos = position
-        this.legalMoves = {}
-		this.alive = true
-		this.element = document.createElement('img')
-		this.initializeElement()
-	}
-
 	// must be called before spaceHelper can be used
 	static setSpaceCheckCallback(func) {
 		super.spaceHelper = func
@@ -18,6 +8,27 @@ class Piece {
 	// must be called before elementOnClick can be used
 	static setElementSelectionCallback(func) {
 		super.elementOnClick = func
+	}
+	
+	constructor(id, pos) {
+		this.id = id
+		this.moves = {}
+		this.alive = true
+		this.pos = pos
+		this.element = document.createElement('img')
+		this.directions = []
+		this.initializeElement()
+	}
+
+	get position() {
+		return this.pos.str
+	}
+
+	setPosition(coord) {
+		if (! coord instanceof Coord) {
+			throw new Error(`Attempted to assign invalid Coord to ${this.id}: ${coord}`)
+		}
+		this.pos = coord
 	}
 
 	// creates corresponding html element and gives it a click function
@@ -28,27 +39,13 @@ class Piece {
 		this.element.onclick = () => Piece.elementOnClick(this)
 	}
 
-	setLegalMoves(moves) {
-		this.legalMoves = moves
-	}
-
-	// cheap interface for pos variable with no sanity checking
-	// TODO decide if sanity check is needed
-	setPosition(pos) {
-		this.pos = pos
-	}
-
-	getPosition() {
-		return this.pos
-	}
-
-	getID() {
-		return this.id
+	setMoves(moves) {
+		this.moves = moves
 	}
 
 	// checks to see if a position is in this Piece's list of legal mvoes
     canMoveTo(position) {
-        if (this.legalMoves[position]) {
+        if (this.moves[position]) {
             return true
         }
         return false
@@ -58,16 +55,16 @@ class Piece {
 	getPossibleMoves() {
 		let moves = []
 		for (var dir of this.directions) {
-			var cur = this.pos
+			var cur = this.position
 			var done = false
 			while (!done) {
 				cur = Utils.coordIncrementer[dir](cur)
-				if (Utils.isValidSpace(cur)) {
+				if (Utils.isValidCoord(cur)) {
 					let space = Piece.spaceHelper(cur)
 					if (space.isEmpty()) {
 						moves.push(cur)
 					} else {
-						if (this.isEnemyOf(space.getContents())) {
+						if (this.isEnemyOf(space.contents)) {
 							moves.push(cur)
 						}
 						done = true
@@ -112,19 +109,15 @@ class Pawn extends Piece {
 		this.element.src = this.img
 	}
 
-	getType() {
-		return 'Pawn'
-	}
-
 	getPossibleMoves() {
 		// forward is relative
 		let fwd = this.id[1] == 'w' ? 'up' : 'down'
 		var moves = [
-			Utils.coordIncrementer[fwd](this.pos),
-			Utils.coordIncrementer[fwd+'left'](this.pos),
-			Utils.coordIncrementer[fwd+'right'](this.pos)
+			Utils.coordIncrementer[fwd](this.position),
+			Utils.coordIncrementer[fwd+'left'](this.position),
+			Utils.coordIncrementer[fwd+'right'](this.position)
 		]
-		moves = moves.filter(pos => Utils.isValidSpace(pos))
+		moves = moves.filter(pos => Utils.isValidCoord(pos))
 		// not ideal, but some filtering here is the most elegant option
 		if (this.firstMove && Piece.spaceHelper(moves[0]).isEmpty()) {
 			moves.push(Utils.coordIncrementer[fwd](moves[0]))
@@ -132,7 +125,7 @@ class Pawn extends Piece {
 		// no on-board moves remaining signifies a Pawn promotion
 		// TODO this adds a move but does not highlight or execute properly
 		if (moves.length == 0) {
-			moves.push(this.pos)
+			moves.push(this.position)
 		}
 		return moves
 	}
@@ -155,10 +148,6 @@ class Rook extends Piece {
 		}
 		this.element.src = this.img
 	}
-
-	getType() {
-		return 'Rook'
-	}
 }
 
 class Knight extends Piece {
@@ -172,12 +161,8 @@ class Knight extends Piece {
 		this.element.src = this.img
 	}
 
-	getType() {
-		return 'Knight'
-	}
-
 	getPossibleMoves() {
-		return Utils.validKnightCoords(this.pos)
+		return Utils.validKnightCoords(this.position)
 	}
 }
 
@@ -192,10 +177,6 @@ class Bishop extends Piece {
 		}
 		this.element.src = this.img
 	}
-
-	getType() {
-		return 'Bishop'
-	}
 }
 
 class Queen extends Piece {
@@ -208,10 +189,6 @@ class Queen extends Piece {
 			this.img = 'pieces/qdt60.png'
 		}
 		this.element.src = this.img
-	}
-
-	getType() {
-		return 'Queen'
 	}
 }
 
@@ -226,15 +203,11 @@ class King extends Piece {
 		this.element.src = this.img
 	}
 
-	getType() {
-		return 'King'
-	}
-
 	getPossibleMoves() {
 		let moves = []
 		for (var dir in Utils.coordIncrementer) {
-			let cur = Utils.coordIncrementer[dir](this.pos)
-			if (Utils.isValidSpace(cur)) {
+			let cur = Utils.coordIncrementer[dir](this.position)
+			if (Utils.isValidCoord(cur)) {
 				moves.push(cur)
 			}
 		}
