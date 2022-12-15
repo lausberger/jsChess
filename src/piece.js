@@ -6,6 +6,7 @@ class Piece {
 		this.pos = position
         this.legalMoves = {}
 		this.alive = true
+		this.hasMoved = false
 		this.element = document.createElement('img')
 		this.initializeElement(clickHandler)
 		this.spaceHelper = spaceHandler
@@ -106,13 +107,15 @@ class Piece {
 
 	// does nothing unless Pawn
 	handleFirstMove() {
+		if (!this.hasMoved) {
+			this.hasMoved = true
+		}
 	}
 }
 
 class Pawn extends Piece {
 	constructor(id, position, clickFn, spaceFn) {
 		super(id, position, clickFn, spaceFn)
-		this.firstMove = true
 		if (this.id[1] == 'w') {
 			this.img = 'pieces/plt60.png'
 		} else { // assumes color is 'b'
@@ -135,7 +138,7 @@ class Pawn extends Piece {
 		]
 		moves = moves.filter(pos => Utils.isValidSpace(pos))
 		// not ideal, but some filtering here is the most elegant option
-		if (this.firstMove && this.spaceHelper(moves[0]).isEmpty()) {
+		if (!this.hasMoved && this.spaceHelper(moves[0]).isEmpty()) {
 			moves.push(Utils.coordIncrementer[fwd](moves[0]))
 		} 
 		// no on-board moves remaining signifies a Pawn promotion
@@ -166,12 +169,6 @@ class Pawn extends Piece {
 			}
 		}
 		return moves
-	}
-
-	handleFirstMove() {
-		if (this.firstMove) {
-			this.firstMove = false
-		}
 	}
 }
 

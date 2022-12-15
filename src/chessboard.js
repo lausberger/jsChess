@@ -161,20 +161,20 @@ class ChessBoard {
 
 	// places a Piece inside of the holder element and allows it to perform actions
 	select(piece) {
-        // deselect when clicking the same piece that is selected
-        if (this.selected == piece) {
-            this.deselect()
-            return
-        // otherwise, determine whether we're reselecting or attacking
-        } else if (this.selected != 'none') {
-            // do nothing if we're attacking
-            if (this.selected.isEnemyOf(piece)) {
-                return
-            // else, deselect and continue with selection process
-            } else {
-                this.deselect()
-            }
-        }
+		// deselect when clicking the same piece that is selected
+		if (this.selected == piece) {
+				this.deselect()
+				return
+		// otherwise, determine whether we're reselecting or attacking
+		} else if (this.selected != 'none') {
+				// do nothing if we're attacking
+				if (this.selected.isEnemyOf(piece)) {
+						return
+				// else, deselect and continue with selection process
+				} else {
+						this.deselect()
+				}
+		}
 		this.selected = piece
 		console.log(piece)
     	piece.updateLegalMoves()
@@ -190,7 +190,7 @@ class ChessBoard {
 
 	// remove currently selected Piece from the holder element
 	deselect() {
-        this.removeHighlights(this.selected)
+		this.removeHighlights(this.selected)
 		this.selected = 'none'
 		let holder = document.getElementById('holder')
 		holder.removeChild(holder.firstChild)
