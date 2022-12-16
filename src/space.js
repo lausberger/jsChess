@@ -17,7 +17,7 @@ class Space {
 	}
 
 	get id() { return this.#coord.str }
-	get contents() { return this.#piece || 'empty'}
+	get contents() { return this.#piece || 'empty' }
 
 	// must be called before elementOnClick can be used
 	static setElementOnClickCallback(func) {
@@ -34,23 +34,23 @@ class Space {
 	}
 
 	// turns this space yellow to show a piece's legal moves
-    addHighlight() {
+	addHighlight() {
 		this.element.style.backgroundColor = '#FDFF47'
 		if (this.isRed) {
 			this.isRed = false
 			this.wasRed = true
 		}
-    }
+	}
 
-    // DEBUG only used to show a king in check
-    redden() {
-        this.element.style.backgroundColor = '#FF0000'
+	// DEBUG only used to show a king in check
+	redden() {
+		this.element.style.backgroundColor = '#FF0000'
 		this.isRed = true
 		this.wasRed = false
-    }
+	}
 
 	// restores this space to its normal color
-    removeHighlight() {
+	removeHighlight() {
 		// TODO reimplement to not require this. otherwise it removes red
 		if (!this.isRed && this.wasRed) {
 			this.redden()
@@ -59,12 +59,12 @@ class Space {
 			this.isRed = false
 			this.wasRed = false
 		}
-    }
-    
+	}
+
 	// places a Piece in this space
 	// does NOT update Piece's position (see ChessBoard.addPieceToSpace())
 	addPiece(piece) {
-		if (! this.isEmpty()) {
+		if (!this.isEmpty()) {
 			throw new Error('Attempting to add piece to occupied space!')
 		}
 		this.#piece = piece
@@ -74,20 +74,20 @@ class Space {
 	// makes this space empty again
 	// does NOT update Piece's position (see ChessBoard.removePieceFromSpace())
 	removePiece(piece) {
-        if (! this.hasPiece(piece)) {
+		if (!this.hasPiece(piece)) {
 			throw new Error('Attempting to remove a piece that is not there!')
 		}
 		this.#piece = null
-		this.element.removeChild(piece.element)	
+		this.element.removeChild(piece.element)
 	}
 
 	// check if a given piece is in this space
-    hasPiece(piece) {
+	hasPiece(piece) {
 		return this.contents == piece
-    }
+	}
 
 	// check if this space is empty
-    isEmpty() {
-        return this.contents == 'empty'
-    }
+	isEmpty() {
+		return this.contents == 'empty'
+	}
 }

@@ -9,7 +9,7 @@ class Piece {
 	static setElementSelectionCallback(func) {
 		super.elementOnClick = func
 	}
-	
+
 	constructor(id, pos) {
 		this.id = id
 		this.moves = {}
@@ -25,7 +25,7 @@ class Piece {
 	}
 
 	setPosition(coord) {
-		if (! coord instanceof Coord) {
+		if (!coord instanceof Coord) {
 			throw new Error(`Attempted to assign invalid Coord to ${this.id}: ${coord}`)
 		}
 		this.pos = coord
@@ -44,12 +44,12 @@ class Piece {
 	}
 
 	// checks to see if a position is in this Piece's list of legal mvoes
-    canMoveTo(position) {
-        if (this.moves[position]) {
-            return true
-        }
-        return false
-    }
+	canMoveTo(position) {
+		if (this.moves[position]) {
+			return true
+		}
+		return false
+	}
 
 	// generalized for all Pieces that can move any number of spaces in a direction
 	getPossibleMoves() {
@@ -71,7 +71,7 @@ class Piece {
 					}
 				} else {
 					done = true
-				}	
+				}
 			}
 		}
 		return moves
@@ -94,7 +94,7 @@ class Piece {
 	}
 
 	// does nothing unless Pawn
-	handleFirstMove() {}
+	handleFirstMove() { }
 }
 
 class Pawn extends Piece {
@@ -114,14 +114,14 @@ class Pawn extends Piece {
 		let fwd = this.id[1] == 'w' ? 'up' : 'down'
 		var moves = [
 			Utils.coordIncrementer[fwd](this.position),
-			Utils.coordIncrementer[fwd+'left'](this.position),
-			Utils.coordIncrementer[fwd+'right'](this.position)
+			Utils.coordIncrementer[fwd + 'left'](this.position),
+			Utils.coordIncrementer[fwd + 'right'](this.position)
 		]
 		moves = moves.filter(pos => Utils.isValidCoord(pos))
 		// not ideal, but some filtering here is the most elegant option
 		if (this.firstMove && Piece.spaceHelper(moves[0]).isEmpty()) {
 			moves.push(Utils.coordIncrementer[fwd](moves[0]))
-		} 
+		}
 		// no on-board moves remaining signifies a Pawn promotion
 		// TODO this adds a move but does not highlight or execute properly
 		if (moves.length == 0) {

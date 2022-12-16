@@ -1,13 +1,13 @@
 // creates the ChessBoard object and corresponding html element
 class ChessBoard {
 	// create an 8 by 8 chessboard
-	constructor() { 
+	constructor() {
 		this.spaces = this.generateBoard()
-        this.pieces = this.generatePieces()
-        this.selected = 'none'
+		this.pieces = this.generatePieces()
+		this.selected = 'none'
 		this.updateQueue = []
 		this.populateBoard()
-        this.renderBoard()
+		this.renderBoard()
 	}
 
 	// creates a dictionary of Space objects with alternating colors
@@ -31,7 +31,7 @@ class ChessBoard {
 		}
 		Space.setElementOnClickCallback(handleClick)
 		var spaces = {}
-		var switchColor = false 
+		var switchColor = false
 		for (var i in Utils.coordMatrix) {
 			for (var j in Utils.coordMatrix[i]) {
 				let coord = Utils.coordMatrix[i][j]
@@ -41,7 +41,7 @@ class ChessBoard {
 			}
 			switchColor = !switchColor
 		}
-    
+
 		return spaces
 	}
 
@@ -74,7 +74,7 @@ class ChessBoard {
 		pieces['Bb2'] = new Bishop('Bb2', Coordinates.F8)
 		pieces['Qb'] = new Queen('Qb', Coordinates.D8)
 		pieces['Kb'] = new King('Kb', Coordinates.E8)
-		
+
 		// white pawns
 		pieces['pw1'] = new Pawn('pw1', Coordinates.A2)
 		pieces['pw2'] = new Pawn('pw2', Coordinates.B2)
@@ -94,7 +94,7 @@ class ChessBoard {
 		pieces['Bw2'] = new Bishop('Bw2', Coordinates.F1)
 		pieces['Qw'] = new Queen('Qw', Coordinates.D1)
 		pieces['Kw'] = new King('Kw', Coordinates.E1)
-		
+
 		return pieces
 	}
 
@@ -115,7 +115,7 @@ class ChessBoard {
 		for (var i = 8; i > 0; i--) {
 			let rowElement = document.createElement('div')
 			rowElement.className = 'row'
-			rowElement.id = i 
+			rowElement.id = i
 			for (var j in Utils.columnTable[i]) {
 				let coord = Utils.columnTable[i][parseInt(j)]
 				let space = this.spaces[coord]
@@ -125,20 +125,20 @@ class ChessBoard {
 		}
 	}
 
-    // shows all of a Piece's legal moves in yellow
-    highlightLegalMoves(piece) {
-        for (var pos in piece.moves) {
-            this.spaces[pos].addHighlight() // TODO: make this work
-        }
-    }
+	// shows all of a Piece's legal moves in yellow
+	highlightLegalMoves(piece) {
+		for (var pos in piece.moves) {
+			this.spaces[pos].addHighlight() // TODO: make this work
+		}
+	}
 
 	// returns all of a Piece's legal moves to their default color
-    removeHighlights(piece) {
-        for (var pos in piece.moves) {
+	removeHighlights(piece) {
+		for (var pos in piece.moves) {
 			// TODO better way of fixing highlight bug
 			this.spaces[pos].removeHighlight()
-        }
-    }
+		}
+	}
 
 	// return a reference to the Space occupied by a given Piece, else null
 	getSpaceOfPiece(piece) {
@@ -161,25 +161,25 @@ class ChessBoard {
 
 	// places a Piece inside of the holder element and allows it to perform actions
 	select(piece) {
-        // deselect when clicking the same piece that is selected
-        if (this.selected == piece) {
-            this.deselect()
-            return
-        // otherwise, determine whether we're reselecting or attacking
-        } else if (this.selected != 'none') {
-            // do nothing if we're attacking
-            if (this.selected.isEnemyOf(piece)) {
-                return
-            // else, deselect and continue with selection process
-            } else {
-                this.deselect()
-            }
-        }
+		// deselect when clicking the same piece that is selected
+		if (this.selected == piece) {
+			this.deselect()
+			return
+			// otherwise, determine whether we're reselecting or attacking
+		} else if (this.selected != 'none') {
+			// do nothing if we're attacking
+			if (this.selected.isEnemyOf(piece)) {
+				return
+				// else, deselect and continue with selection process
+			} else {
+				this.deselect()
+			}
+		}
 		this.selected = piece
 		// DEBUG
 		console.log(piece)
 		this.updateMovesOf(piece)
-        this.highlightLegalMoves(piece)
+		this.highlightLegalMoves(piece)
 		// TODO wrap this in another function
 		let holder = document.getElementById('holder')
 		let rPiece = document.getElementById(piece.id).cloneNode(true)
@@ -191,7 +191,7 @@ class ChessBoard {
 
 	// remove currently selected Piece from the holder element
 	deselect() {
-        this.removeHighlights(this.selected)
+		this.removeHighlights(this.selected)
 		this.selected = 'none'
 		let holder = document.getElementById('holder')
 		holder.removeChild(holder.firstChild)
@@ -218,7 +218,7 @@ class ChessBoard {
 				src.removeHighlight()
 			}
 			return this.handleAction(src, dst)
-		} else { 
+		} else {
 			throw new Error('Unknown action type for ' + piece.id + ': ' + piece.moves[coord])
 		}
 	}
@@ -243,7 +243,7 @@ class ChessBoard {
 			// DEBUG
 			console.log(`${pieceA.id} x ${pieceB.id} -> ${dst.id}`)
 			return true
-		} else if (dst.isEmpty() && pieceA != 'empty'){ // movement
+		} else if (dst.isEmpty() && pieceA != 'empty') { // movement
 			this.removePieceFromSpace(pieceA, src)
 			this.addPieceToSpace(pieceA, dst)
 			pieceA.handleFirstMove()
@@ -335,7 +335,7 @@ class ChessBoard {
 				throw new Error(`executeUpdate returned false for update: ${update}`)
 			}
 		}
-        // DEBUG this is only for testing, for now
+		// DEBUG this is only for testing, for now
 		this.updateCheckHighlighting()
 	}
 
@@ -361,7 +361,7 @@ class ChessBoard {
 							if (pos[0] != piece.position[0]) {
 								filteredMoves[pos] = 'a'
 							}
-						// TODO implement promotion
+							// TODO implement promotion
 						} else if (piece == space.contents) {
 							// filteredMoves[pos] = 'p'
 						}

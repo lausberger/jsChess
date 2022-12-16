@@ -11,7 +11,7 @@ class Utils {
 		['A2', 'B2', 'C2', 'D2', 'E2', 'F2', 'G2', 'H2'],
 		['A1', 'B1', 'C1', 'D1', 'E1', 'F1', 'G1', 'H1']
 	]
-	
+
 	// useful when iterating through all spaces at once
 	static coordArray = [
 		'A8', 'B8', 'C8', 'D8', 'E8', 'F8', 'G8', 'H8',
@@ -35,7 +35,7 @@ class Utils {
 		'G': ['G1', 'G2', 'G3', 'G4', 'G5', 'G6', 'G7', 'G8'],
 		'H': ['H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'H7', 'H8']
 	}
-	
+
 	// useful when iterating through a specific column
 	static columnTable = {
 		'1': ['A1', 'B1', 'C1', 'D1', 'E1', 'F1', 'G1', 'H1'],
@@ -48,27 +48,27 @@ class Utils {
 		'8': ['A8', 'B8', 'C8', 'D8', 'E8', 'F8', 'G8', 'H8']
 	}
 
-    // returns the next coord in a given direction
-    // useful for generically exploring in multiple directions
-    // TODO: add logic to return false if output is not a real space
-    static coordIncrementer = {
-        'up': (pos) => { return this.coord(pos, 0, 1) },
-        'upleft': (pos) => { return this.coord(pos, -1, 1) },
-        'upright': (pos) => { return this.coord(pos, 1, 1) },
-        'down': (pos) => { return this.coord(pos, 0, -1) },
-        'downleft': (pos) => { return this.coord(pos, -1, -1) },
-        'downright': (pos) =>  { return this.coord(pos, 1, -1) },
-        'left': (pos) => { return this.coord(pos, -1, 0) },
-        'right': (pos) => { return this.coord(pos, 1, 0) }
-    }
+	// returns the next coord in a given direction
+	// useful for generically exploring in multiple directions
+	// TODO: add logic to return false if output is not a real space
+	static coordIncrementer = {
+		'up': (pos) => { return this.coord(pos, 0, 1) },
+		'upleft': (pos) => { return this.coord(pos, -1, 1) },
+		'upright': (pos) => { return this.coord(pos, 1, 1) },
+		'down': (pos) => { return this.coord(pos, 0, -1) },
+		'downleft': (pos) => { return this.coord(pos, -1, -1) },
+		'downright': (pos) => { return this.coord(pos, 1, -1) },
+		'left': (pos) => { return this.coord(pos, -1, 0) },
+		'right': (pos) => { return this.coord(pos, 1, 0) }
+	}
 
-    static isValidCoord(coord) {
-        return coord[0] in this.rowTable && coord[1] in this.columnTable
-    }
+	static isValidCoord(coord) {
+		return coord[0] in this.rowTable && coord[1] in this.columnTable
+	}
 
-    // returns a list of all positions a knight could attack from
-    static validKnightCoords(pos) {
-        var positions = [
+	// returns a list of all positions a knight could attack from
+	static validKnightCoords(pos) {
+		var positions = [
 			this.coord(pos, 1, 2),
 			this.coord(pos, -1, 2),
 			this.coord(pos, 2, 1),
@@ -79,11 +79,11 @@ class Utils {
 			this.coord(pos, -2, -1)
 		]
 		return positions.filter(c => this.isValidCoord(c))
-    }
+	}
 
-    static coord(position, xIncrement, yIncrement) {
-        let rank = String.fromCharCode(position.charCodeAt(0) + xIncrement)
-        let file = String.fromCharCode(position.charCodeAt(1) + yIncrement)
-        return rank + file
-    }
+	static coord(position, xIncrement, yIncrement) {
+		let rank = String.fromCharCode(position.charCodeAt(0) + xIncrement)
+		let file = String.fromCharCode(position.charCodeAt(1) + yIncrement)
+		return rank + file
+	}
 }
