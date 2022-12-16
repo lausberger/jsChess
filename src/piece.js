@@ -15,6 +15,7 @@ class Piece {
 		this.moves = {}
 		this.alive = true
 		this.pos = pos
+		this.hasMoved = false
 		this.element = document.createElement('img')
 		this.directions = []
 		this.initializeElement()
@@ -45,10 +46,7 @@ class Piece {
 
 	// checks to see if a position is in this Piece's list of legal mvoes
 	canMoveTo(position) {
-		if (this.moves[position]) {
-			return true
-		}
-		return false
+		return this.moves[position] || false
 	}
 
 	// generalized for all Pieces that can move any number of spaces in a direction
@@ -94,7 +92,11 @@ class Piece {
 	}
 
 	// does nothing unless Pawn
-	handleFirstMove() { }
+	handleFirstMove() {
+		if (!this.hasMoved) {
+			this.hasMoved = true
+		}
+	}
 }
 
 class Pawn extends Piece {
@@ -119,7 +121,7 @@ class Pawn extends Piece {
 		]
 		moves = moves.filter(pos => Utils.isValidCoord(pos))
 		// not ideal, but some filtering here is the most elegant option
-		if (this.firstMove && Piece.spaceHelper(moves[0]).isEmpty()) {
+		if (! this.hasMoved && Piece.spaceHelper(moves[0]).isEmpty()) {
 			moves.push(Utils.coordIncrementer[fwd](moves[0]))
 		}
 		// no on-board moves remaining signifies a Pawn promotion
@@ -128,12 +130,6 @@ class Pawn extends Piece {
 			moves.push(this.position)
 		}
 		return moves
-	}
-
-	handleFirstMove() {
-		if (this.firstMove) {
-			this.firstMove = false
-		}
 	}
 }
 

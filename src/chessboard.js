@@ -14,22 +14,8 @@ class ChessBoard {
 	// #a3524e = burgundy
 	// #f2e8e7 = red-tinted white
 	generateBoard() {
-		const handleClick = (space) => {
-			if (this.selected != 'none') {
-				if (this.selected.position != space.id) {
-					// TODO an implementation that makes more sense, perhaps an 'Update' class object
-					// TODO third value is never used, just pass in this.selected and space.id
-					let update = ['move', this.selected.id, this.selected.position, space.id]
-					if (this.legalityCheck(update)) {
-						this.pushUpdate(update)
-						this.updateBoard()
-					} else {
-						console.log(`Illegal move attempted: ${update[1]} to ${update[2]} from ${update[3]}`)
-					}
-				}
-			}
-		}
-		Space.setElementOnClickCallback(handleClick)
+		const clickFn = (space) => { return this.handleClick(space) }
+		Space.setElementOnClickCallback(clickFn)
 		var spaces = {}
 		var switchColor = false
 		for (var i in Utils.coordMatrix) {
@@ -165,12 +151,12 @@ class ChessBoard {
 		if (this.selected == piece) {
 			this.deselect()
 			return
-			// otherwise, determine whether we're reselecting or attacking
+		// otherwise, determine whether we're reselecting or attacking
 		} else if (this.selected != 'none') {
-			// do nothing if we're attacking
-			if (this.selected.isEnemyOf(piece)) {
+			// skip next steps if we're attacking or castling
+			if (this.selected.isEnemyOf(piece) || this.castlingIsValid(this.selected, piece)) {
 				return
-				// else, deselect and continue with selection process
+			// else, deselect and continue with selection process
 			} else {
 				this.deselect()
 			}
@@ -218,8 +204,22 @@ class ChessBoard {
 				src.removeHighlight()
 			}
 			return this.handleAction(src, dst)
+		} else if (piece.moves[coord][0] == 'c') {
+			// remove team identifier for easier string matching
+			let id = piece.moves[coord][1].replace(/[bw]/, '')
+			if (id == 'R1') {
+				let kingDst = this.spaces[Utils.coord(dst.id, 2, 0)]
+				let rookDst = this.spaces[Utils.coord(src.id, -1, 0)]
+				return this.handleAction(src, kingDst) && this.handleAction(dst, rookDst)
+			} else if (id == 'R2') {
+				let kingDst = this.spaces[Utils.coord(dst.id, -1, 0)]
+				let rookDst = this.spaces[Utils.coord(src.id, 1, 0)]
+				return this.handleAction(src, kingDst) && this.handleAction(dst, rookDst)
+			} else {
+				throw new Error('Error occurred during castling. Details: ' + update)
+			}
 		} else {
-			throw new Error('Unknown action type for ' + piece.id + ': ' + piece.moves[coord])
+			throw new Error('Unknown action type for ' + piece.id + ': ' + piece.legalMoves[coord])
 		}
 	}
 
@@ -306,6 +306,71 @@ class ChessBoard {
 		return result
 	}
 
+	castlingIsValid(king, piece) {
+		return king instanceof King && ! king.hasMoved && piece instanceof Rook && ! piece.hasMoved && ! king.isEnemyOf(piece)
+	}
+
+	// return true/false, then set of rook coords
+	handleCastling(king) {
+		var validRooks = []
+		var canCastle = false
+		if (! king.hasMoved) {
+			var hitLeft = false
+			var hitRight = false
+			var left = Utils.coordIncrementer['left'](king.position)
+			var right = Utils.coordIncrementer['right'](king.position)
+			while (! hitLeft) {
+				if (! this.spaces[left].isEmpty()) {
+					hitLeft = true
+					let piece = this.spaces[left].contents
+					// BUG? hasMoved SHOULD be enough to check if both pieces are allies
+					// TODO use getters
+					if (this.castlingIsValid(king, piece)) {
+						validRooks.push(piece.position)
+						canCastle = true
+					}
+				} else {
+					left = Utils.coordIncrementer['left'](left)
+				}
+			}
+			while (! hitRight) {
+				if (! this.spaces[right].isEmpty()) {
+					hitRight = true
+					let piece = this.spaces[right].contents
+					if (this.castlingIsValid(king, piece)) {
+						validRooks.push(piece.position)
+						canCastle = true
+					}
+				} else {
+					right = Utils.coordIncrementer['right'](right)
+				}
+			}
+		}
+		return [canCastle, validRooks]
+	}
+
+	handleClick(space) {
+		let piece = this.selected
+		if (piece != 'none') {
+			if (piece.position != space.id) {
+				let from = piece.position
+				let to = space.id
+				// TODO an implementation that makes more sense, perhaps an 'Update' class object
+				// TODO third value is never used, just pass in this.selected and space.getID()
+				var update = ['move', piece.id, from, to]
+				if (this.legalityCheck(update)) {
+					if (this.castlingIsValid(piece, space.contents)) {
+						update[0] = 'castle'
+					}
+					this.pushUpdate(update)
+					this.updateBoard()
+				} else {
+					console.log(`Illegal move attempted: ${update[1]} to ${update[2]} from ${update[3]}`)
+				}
+			}
+		}
+	}
+
 	// updates the appearance of King Spaces if in check
 	updateCheckHighlighting() {
 		for (let [k, inCheck] of Object.entries(this.kingsCheckStatuses())) {
@@ -369,6 +434,10 @@ class ChessBoard {
 				}
 				break
 			case King:
+				let [canCastle, castlingMoves] = this.handleCastling(piece)
+				if (canCastle) {
+					possibleMoves = possibleMoves.concat(castlingMoves)
+				}
 				for (var pos of possibleMoves) {
 					let space = this.spaces[pos]
 					if (space.isEmpty()) {
@@ -377,9 +446,8 @@ class ChessBoard {
 						if (piece.isEnemyOf(space.contents)) {
 							filteredMoves[pos] = 'a'
 						} else {
-							// TODO implement castling
-							if (space.contents instanceof Rook) {
-								// filteredMoves[pos] = 'c'
+							if (canCastle && space.contents instanceof Rook) {
+								filteredMoves[pos] = ['c', space.contents.id]
 							}
 						}
 					}
