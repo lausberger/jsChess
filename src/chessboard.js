@@ -225,7 +225,7 @@ class ChessBoard {
 
 	handleAction(src, dst) {
 		let pieceA = src.contents
-		if (!dst.isEmpty() && pieceA != 'empty') { // attack
+		if (! dst.isEmpty() && pieceA != 'empty') { // attack
 			let pieceB = dst.contents
 			this.removePieceFromSpace(pieceA, src)
 			this.removePieceFromSpace(pieceB, dst)
@@ -267,17 +267,17 @@ class ChessBoard {
 		for (var k of kings) {
 			result[k.id] = false
 			// DEBUG here so this can be called when a king is dead
-			if (!k.isAlive()) {
+			if (! k.alive) {
 				continue
 			}
 			for (var direction in Utils.coordIncrementer) {
 				var c = k.position
 				var done = false
-				while (!done) {
+				while (! done) {
 					c = Utils.coordIncrementer[direction](c)
 					if (Utils.isValidCoord(c)) {
 						let s = this.spaces[c]
-						if (!s.isEmpty()) {
+						if (! s.isEmpty()) {
 							let p = s.contents
 							if (p.isEnemyOf(k)) {
 								this.updateMovesOf(p)
@@ -294,9 +294,9 @@ class ChessBoard {
 			}
 			for (var c of Utils.validKnightCoords(k.position)) {
 				let s = this.spaces[c]
-				if (!s.isEmpty()) {
+				if (! s.isEmpty()) {
 					let p = s.contents
-					if (p.isEnemyOf(k) && p instanceof Knight) {
+					if (p .isEnemyOf(k) && p instanceof Knight) {
 						result[k.id] = true
 						break
 					}

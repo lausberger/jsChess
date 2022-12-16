@@ -1,35 +1,40 @@
 // provides default functions for Piece objects
 class Piece {
-	// must be called before spaceHelper can be used
-	static setSpaceCheckCallback(func) {
-		super.spaceHelper = func
-	}
-
-	// must be called before elementOnClick can be used
-	static setElementSelectionCallback(func) {
-		super.elementOnClick = func
-	}
+	#pos
+	#identifier
+	#firstTurn
+	#playable
 
 	constructor(id, pos) {
-		this.id = id
+		this.#identifier = id
+		this.#playable = true
+		this.#pos = pos
+		this.#firstTurn = true
 		this.moves = {}
-		this.alive = true
-		this.pos = pos
-		this.hasMoved = false
 		this.element = document.createElement('img')
 		this.directions = []
 		this.initializeElement()
 	}
 
-	get position() {
-		return this.pos.str
+	get position() { return this.#pos.str }
+	get hasMoved() { return ! this.#firstTurn }
+	get id() { return this.#identifier }
+	get alive() { return this.#playable }
+
+	// must be called before spaceHelper can be used
+	static setSpaceCheckCallback(func) {
+		super.spaceHelper = func
+	}
+	// must be called before elementOnClick can be used
+	static setElementSelectionCallback(func) {
+		super.elementOnClick = func
 	}
 
 	setPosition(coord) {
 		if (!coord instanceof Coord) {
 			throw new Error(`Attempted to assign invalid Coord to ${this.id}: ${coord}`)
 		}
-		this.pos = coord
+		this.#pos = coord
 	}
 
 	// creates corresponding html element and gives it a click function
@@ -84,17 +89,13 @@ class Piece {
 	}
 
 	kill() {
-		this.alive = false
-	}
-
-	isAlive() {
-		return this.alive
+		this.#playable = false
 	}
 
 	// does nothing unless Pawn
 	handleFirstMove() {
-		if (!this.hasMoved) {
-			this.hasMoved = true
+		if (this.#firstTurn) {
+			this.#firstTurn = false
 		}
 	}
 }
