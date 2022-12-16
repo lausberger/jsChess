@@ -4,7 +4,7 @@ class Piece {
 		this.id = id
 		this.directions = []
 		this.pos = position
-        this.legalMoves = {}
+		this.legalMoves = {}
 		this.alive = true
 		this.hasMoved = false
 		this.element = document.createElement('img')
@@ -35,12 +35,12 @@ class Piece {
 	}
 
 	// checks to see if a position is in this Piece's list of legal mvoes
-    checkIfLegal(position) {
-        if (this.legalMoves[position]) {
-            return true
-        }
-        return false
-    }
+	checkIfLegal(position) {
+		if (this.legalMoves[position]) {
+			return true
+		}
+		return false
+	}
 
 	// generalized for all Pieces that can move any number of spaces in a direction
 	getPossibleMoves() {
@@ -62,7 +62,7 @@ class Piece {
 					}
 				} else {
 					done = true
-				}	
+				}
 			}
 		}
 		return moves
@@ -133,14 +133,14 @@ class Pawn extends Piece {
 		let fwd = this.id[1] == 'w' ? 'up' : 'down'
 		var moves = [
 			Utils.coordIncrementer[fwd](this.pos),
-			Utils.coordIncrementer[fwd+'left'](this.pos),
-			Utils.coordIncrementer[fwd+'right'](this.pos)
+			Utils.coordIncrementer[fwd + 'left'](this.pos),
+			Utils.coordIncrementer[fwd + 'right'](this.pos)
 		]
 		moves = moves.filter(pos => Utils.isValidSpace(pos))
 		// not ideal, but some filtering here is the most elegant option
 		if (!this.hasMoved && this.spaceHelper(moves[0]).isEmpty()) {
 			moves.push(Utils.coordIncrementer[fwd](moves[0]))
-		} 
+		}
 		// no on-board moves remaining signifies a Pawn promotion
 		// TODO this adds a move but does not highlight or execute properly
 		if (moves.length == 0) {
@@ -162,7 +162,7 @@ class Pawn extends Piece {
 					if (pos[0] != this.getPosition()[0]) {
 						moves[pos] = 'a'
 					}
-				// TODO implement promotion
+					// TODO implement promotion
 				} else if (this == space.getContents()) {
 					// moves[pos] = 'p'
 				}
@@ -244,8 +244,9 @@ class Queen extends Piece {
 }
 
 class King extends Piece {
-	constructor(id, position, clickFn, spaceFn) {
+	constructor(id, position, clickFn, spaceFn, castleFn) {
 		super(id, position, clickFn, spaceFn)
+		this.castleHandler = castleFn
 		if (this.id.charAt(1) == 'w') {
 			this.img = 'pieces/klt60.png'
 		} else {
@@ -271,17 +272,21 @@ class King extends Piece {
 
 	legalityFilter(possibleMoves) {
 		let moves = {}
+		let [canCastle, castlingMoves] = this.castleHandler(this)
+		if (canCastle) {
+			possibleMoves = possibleMoves.concat(castlingMoves)
+		}
 		for (var pos of possibleMoves) {
 			let space = this.spaceHelper(pos)
 			if (space.isEmpty()) {
 				moves[pos] = 'm'
 			} else {
-				if (this.isEnemyOf(space.getContents())) {
+				let piece = space.getContents()
+				if (this.isEnemyOf(piece)) {
 					moves[pos] = 'a'
 				} else {
-					// TODO implement castling
-					if (space.getContents().getType() == "Rook") {
-						// moves[pos] = 'c'
+					if (canCastle && piece.getType() == 'Rook') {
+						moves[pos] = ['c', piece.getID()]
 					}
 				}
 			}

@@ -1,13 +1,13 @@
 // creates the ChessBoard object and corresponding html element
 class ChessBoard {
 	// create an 8 by 8 chessboard
-	constructor() { 
+	constructor() {
 		this.spaces = this.generateBoard()
-        this.pieces = this.generatePieces()
-        this.selected = 'none'
+		this.pieces = this.generatePieces()
+		this.selected = 'none'
 		this.updateQueue = []
 		this.populateBoard()
-        this.renderBoard()
+		this.renderBoard()
 	}
 
 	// creates a dictionary of Space objects with alternating colors
@@ -16,29 +16,35 @@ class ChessBoard {
 	generateBoard() {
 		const handleClick = (space) => {
 			if (this.selected != 'none') {
-				if (this.selected.getPosition() != space.id) {
+				let piece = this.selected
+				if (piece.getPosition() != space.getID()) {
+					let from = piece.getPosition()
+					let to = space.getID()
 					// TODO an implementation that makes more sense, perhaps an 'Update' class object
-					// TODO third value is never used, just pass in this.selected and space.id
-					let update = ['move', this.selected.getID(), this.selected.getPosition(), space.id]
+					// TODO third value is never used, just pass in this.selected and space.getID()
+					var update = ['move', piece.getID(), from, to]
 					if (this.legalityCheck(update)) {
+						if (this.canCastleWith(space.getContents())) {
+							update[0] = 'castle'
+						}
 						this.pushUpdate(update)
 						this.updateBoard()
 					} else {
-						console.log(`Illegal move attempted: ${this.selected.getID()} to ${space.id} from ${this.selected.getPosition()}`)
+						console.log(`Illegal move attempted: ${this.selected.getID()} to ${space.getID()} from ${this.selected.getPosition()}`)
 					}
 				}
 			}
 		}
 		var spaces = {}
-		var switchColor = false	
+		var switchColor = false
 		for (var i in Utils.coordMatrix) {
 			for (var j in Utils.coordMatrix[i]) {
 				let coord = Utils.coordMatrix[i][j]
 				spaces[coord] = new Space(
-					switchColor === true ? '#a3524e' : '#f2e8e7', 
+					switchColor === true ? '#a3524e' : '#f2e8e7',
 					coord,
 					handleClick
-                )
+				)
 				switchColor = !switchColor
 			}
 			switchColor = !switchColor
@@ -53,6 +59,9 @@ class ChessBoard {
 		}
 		const spaceFn = (pos) => {
 			return this.spaces[pos] || null
+		}
+		const castleFn = (king) => {
+			return this.handleCastling(king)
 		}
 		var pieces = {}
 		// black pawns
@@ -73,8 +82,8 @@ class ChessBoard {
 		pieces['Bb1'] = new Bishop('Bb1', 'c8', clickFn, spaceFn)
 		pieces['Bb2'] = new Bishop('Bb2', 'f8', clickFn, spaceFn)
 		pieces['Qb'] = new Queen('Qb', 'd8', clickFn, spaceFn)
-		pieces['Kb'] = new King('Kb', 'e8', clickFn, spaceFn)
-		
+		pieces['Kb'] = new King('Kb', 'e8', clickFn, spaceFn, castleFn)
+
 		// white pawns
 		pieces['pw1'] = new Pawn('pw1', 'a2', clickFn, spaceFn)
 		pieces['pw2'] = new Pawn('pw2', 'b2', clickFn, spaceFn)
@@ -93,8 +102,8 @@ class ChessBoard {
 		pieces['Bw1'] = new Bishop('Bw1', 'c1', clickFn, spaceFn)
 		pieces['Bw2'] = new Bishop('Bw2', 'f1', clickFn, spaceFn)
 		pieces['Qw'] = new Queen('Qw', 'd1', clickFn, spaceFn)
-		pieces['Kw'] = new King('Kw', 'e1', clickFn, spaceFn)
-		
+		pieces['Kw'] = new King('Kw', 'e1', clickFn, spaceFn, castleFn)
+
 		return pieces
 	}
 
@@ -115,7 +124,7 @@ class ChessBoard {
 		for (var i = 8; i > 0; i--) {
 			let rowElement = document.createElement('div')
 			rowElement.className = 'row'
-			rowElement.id = i 
+			rowElement.id = i
 			for (var j in Utils.columnTable[i]) {
 				let coord = Utils.columnTable[i][parseInt(j)]
 				let space = this.spaces[coord]
@@ -125,24 +134,24 @@ class ChessBoard {
 		}
 	}
 
-    // shows all of a Piece's legal moves in yellow
-    highlightLegalMoves(piece) {
-        for (var space in piece.legalMoves) {
-            this.spaces[space].addHighlight() // TODO: make this work
-        }
-    }
+	// shows all of a Piece's legal moves in yellow
+	highlightLegalMoves(piece) {
+		for (var space in piece.legalMoves) {
+			this.spaces[space].addHighlight() // TODO: make this work
+		}
+	}
 
 	// returns all of a Piece's legal moves to their default color
-    removeHighlights(piece) {
-        for (var pos in piece.legalMoves) {
+	removeHighlights(piece) {
+		for (var pos in piece.legalMoves) {
 			// TODO better way of fixing highlight bug
 			this.spaces[pos].removeHighlight()
-        }
-    }
+		}
+	}
 
 	// return a reference to the Space occupied by a given Piece, else null
 	getSpaceOfPiece(piece) {
-		return this.spaces[piece.pos] || null
+		return this.spaces[piece.getPosition()] || null
 	}
 
 	// only the ChessBoard should be able to manage both Space and Piece properties
@@ -156,29 +165,33 @@ class ChessBoard {
 	// TODO should this return a status boolean?
 	addPieceToSpace(piece, space) {
 		space.addPiece(piece)
-		piece.setPosition(space.id)
+		piece.setPosition(space.getID())
+	}
+
+	canCastleWith(piece) {
+		return this.selected.getType() == 'King' && ! this.selected.hasMoved && piece.getType() == 'Rook' && ! piece.hasMoved && ! this.selected.isEnemyOf(piece)
 	}
 
 	// places a Piece inside of the holder element and allows it to perform actions
 	select(piece) {
 		// deselect when clicking the same piece that is selected
 		if (this.selected == piece) {
-				this.deselect()
-				return
+			this.deselect()
+			return
 		// otherwise, determine whether we're reselecting or attacking
 		} else if (this.selected != 'none') {
-				// do nothing if we're attacking
-				if (this.selected.isEnemyOf(piece)) {
-						return
-				// else, deselect and continue with selection process
-				} else {
-						this.deselect()
-				}
+			// skip next steps if we're attacking or castling
+			if (this.selected.isEnemyOf(piece) || this.canCastleWith(piece)) {
+				return
+			// else, deselect and continue with selection process
+			} else {
+				this.deselect()
+			}
 		}
 		this.selected = piece
 		console.log(piece)
-    	piece.updateLegalMoves()
-        this.highlightLegalMoves(piece)
+		piece.updateLegalMoves()
+		this.highlightLegalMoves(piece)
 		// TODO wrap this in another function
 		let holder = document.getElementById('holder')
 		let rPiece = document.getElementById(piece.id).cloneNode(true)
@@ -219,8 +232,22 @@ class ChessBoard {
 				src.removeHighlight()
 			}
 			return this.handleAction(src, dst)
-		} else { 
-			throw new Error('Unknown action type for ' + piece.id + ': ' + piece.legalMoves[coord])
+		} else if (piece.legalMoves[coord][0] == 'c') {
+			// remove team identifier for easier string matching
+			let id = piece.legalMoves[coord][1].replace(/[bw]/, '')
+			if (id == 'R1') {
+				let kingDst = this.spaces[Utils.coord(dst.getID(), 2, 0)]
+				let rookDst = this.spaces[Utils.coord(src.getID(), -1, 0)]
+				return this.handleAction(src, kingDst) && this.handleAction(dst, rookDst)
+			} else if (id == 'R2') {
+				let kingDst = this.spaces[Utils.coord(dst.getID(), -1, 0)]
+				let rookDst = this.spaces[Utils.coord(src.getID(), 1, 0)]
+				return this.handleAction(src, kingDst) && this.handleAction(dst, rookDst)
+			} else {
+				throw new Error('Error occurred during castling. Details: ' + update)
+			}
+		} else {
+			throw new Error('Unknown action type for ' + piece.getID() + ': ' + piece.legalMoves[coord])
 		}
 	}
 
@@ -244,7 +271,7 @@ class ChessBoard {
 			// DEBUG
 			console.log(`${pieceA.id} x ${pieceB.id} -> ${dst.id}`)
 			return true
-		} else if (dst.isEmpty() && pieceA != 'empty'){ // movement
+		} else if (dst.isEmpty() && pieceA != 'empty') { // movement
 			this.removePieceFromSpace(pieceA, src)
 			this.addPieceToSpace(pieceA, dst)
 			pieceA.handleFirstMove()
@@ -307,6 +334,45 @@ class ChessBoard {
 		return result
 	}
 
+	// return true/false, then set of rook coords
+	handleCastling(king) {
+		var validRooks = []
+		var canCastle = false
+		if (!king.hasMoved) {
+			var hitLeft = false
+			var hitRight = false
+			var left = Utils.coordIncrementer['left'](king.getPosition())
+			var right = Utils.coordIncrementer['right'](king.getPosition())
+			while (!hitLeft) {
+				if (!this.spaces[left].isEmpty()) {
+					hitLeft = true
+					let piece = this.spaces[left].getContents()
+					// BUG? hasMoved SHOULD be enough to check if both pieces are allies
+					// TODO use getters
+					if (piece.getType() == 'Rook' && !piece.hasMoved) {
+						validRooks.push(piece.getPosition())
+						canCastle = true
+					}
+				} else {
+					left = Utils.coordIncrementer['left'](left)
+				}
+			}
+			while (!hitRight) {
+				if (!this.spaces[right].isEmpty()) {
+					hitRight = true
+					let piece = this.spaces[right].getContents()
+					if (piece.getType() == 'Rook' && !piece.hasMoved) {
+						validRooks.push(piece.getPosition())
+						canCastle = true
+					}
+				} else {
+					right = Utils.coordIncrementer['right'](right)
+				}
+			}
+		}
+		return [canCastle, validRooks]
+	}
+
 	// updates the appearance of King Spaces if in check
 	updateCheckHighlighting() {
 		for (let [k, inCheck] of Object.entries(this.kingsCheckStatuses())) {
@@ -338,7 +404,7 @@ class ChessBoard {
 				throw new Error(`executeUpdate returned false for update: ${update}`)
 			}
 		}
-        // DEBUG this is only for testing, for now
+		// DEBUG this is only for testing, for now
 		this.updateCheckHighlighting()
 	}
 }
