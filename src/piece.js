@@ -1,61 +1,73 @@
 // provides default functions for Piece objects
 class Piece {
-	constructor(id, position, clickHandler, spaceHandler) {
-		this.id = id
-		this.directions = []
-		this.pos = position
-		this.legalMoves = {}
-		this.alive = true
-		this.hasMoved = false
+	#pos
+	#identifier
+	#firstTurn
+	#playable
+
+	constructor(id, pos) {
+		this.#identifier = id
+		this.#playable = true
+		this.#pos = pos
+		this.#firstTurn = true
+		this.moves = {}
 		this.element = document.createElement('img')
-		this.initializeElement(clickHandler)
-		this.spaceHelper = spaceHandler
+		this.directions = []
+		this.initializeElement()
+	}
+
+	get position() { return this.#pos.str }
+	get hasMoved() { return ! this.#firstTurn }
+	get id() { return this.#identifier }
+	get alive() { return this.#playable }
+
+	// must be called before spaceHelper can be used
+	static setSpaceCheckCallback(func) {
+		super.spaceHelper = func
+	}
+	// must be called before elementOnClick can be used
+	static setElementSelectionCallback(func) {
+		super.elementOnClick = func
+	}
+
+	setPosition(coord) {
+		if (!coord instanceof Coord) {
+			throw new Error(`Attempted to assign invalid Coord to ${this.id}: ${coord}`)
+		}
+		this.#pos = coord
 	}
 
 	// creates corresponding html element and gives it a click function
-	initializeElement(func) {
+	initializeElement() {
 		this.element.className = 'piece'
 		this.element.id = this.id
 		this.element.style.opacity = 1
-		this.element.onclick = () => func(this)
+		this.element.onclick = () => Piece.elementOnClick(this)
 	}
 
-	// cheap interface for pos variable with no sanity checking
-	// TODO decide if sanity check is needed
-	setPosition(pos) {
-		this.pos = pos
-	}
-
-	getPosition() {
-		return this.pos
-	}
-
-	getID() {
-		return this.id
+	setMoves(moves) {
+		this.moves = moves
 	}
 
 	// checks to see if a position is in this Piece's list of legal mvoes
-	checkIfLegal(position) {
-		if (this.legalMoves[position]) {
-			return true
-		}
-		return false
+	canMoveTo(position) {
+		return this.moves[position] || false
 	}
 
 	// generalized for all Pieces that can move any number of spaces in a direction
 	getPossibleMoves() {
 		let moves = []
 		for (var dir of this.directions) {
-			var cur = this.pos
+			var cur = this.position
 			var done = false
 			while (!done) {
 				cur = Utils.coordIncrementer[dir](cur)
-				if (Utils.isValidSpace(cur)) {
-					let space = this.spaceHelper(cur)
+				if (Utils.isValidCoord(cur)) {
+					let space = Piece.spaceHelper(cur)
 					if (space.isEmpty()) {
 						moves.push(cur)
 					} else {
-						if (this.isEnemyOf(space.getContents())) {
+						if (this.isEnemyOf(space.contents)) {
 							moves.push(cur)
 						}
 						done = true
@@ -68,27 +80,6 @@ class Piece {
 		return moves
 	}
 
-	// generalized for most Pieces
-	legalityFilter(possibleMoves) {
-		let moves = {}
-		for (var pos of possibleMoves) {
-			let space = this.spaceHelper(pos)
-			if (space.isEmpty()) {
-				moves[pos] = 'm'
-			} else {
-				if (this.isEnemyOf(space.getContents())) {
-					moves[pos] = 'a'
-				}
-			}
-		}
-		return moves
-	}
-
-	updateLegalMoves() {
-		let moves = this.getPossibleMoves()
-		this.legalMoves = this.legalityFilter(moves)
-	}
-
 	// checks whether a Piece belongs to the opposing team, used to find legal moves
 	isEnemyOf(otherPiece) {
 		if (this.id[1] != otherPiece.id[1]) {
@@ -98,24 +89,21 @@ class Piece {
 	}
 
 	kill() {
-		this.alive = false
-	}
-
-	isAlive() {
-		return this.alive
+		this.#playable = false
 	}
 
 	// does nothing unless Pawn
 	handleFirstMove() {
-		if (!this.hasMoved) {
-			this.hasMoved = true
+		if (this.#firstTurn) {
+			this.#firstTurn = false
 		}
 	}
 }
 
 class Pawn extends Piece {
-	constructor(id, position, clickFn, spaceFn) {
-		super(id, position, clickFn, spaceFn)
+	constructor(id, position) {
+		super(id, position)
+		this.firstMove = true
 		if (this.id[1] == 'w') {
 			this.img = 'pieces/plt60.png'
 		} else { // assumes color is 'b'
@@ -124,57 +112,31 @@ class Pawn extends Piece {
 		this.element.src = this.img
 	}
 
-	getType() {
-		return 'Pawn'
-	}
-
 	getPossibleMoves() {
 		// forward is relative
 		let fwd = this.id[1] == 'w' ? 'up' : 'down'
 		var moves = [
-			Utils.coordIncrementer[fwd](this.pos),
-			Utils.coordIncrementer[fwd + 'left'](this.pos),
-			Utils.coordIncrementer[fwd + 'right'](this.pos)
+			Utils.coordIncrementer[fwd](this.position),
+			Utils.coordIncrementer[fwd + 'left'](this.position),
+			Utils.coordIncrementer[fwd + 'right'](this.position)
 		]
-		moves = moves.filter(pos => Utils.isValidSpace(pos))
+		moves = moves.filter(pos => Utils.isValidCoord(pos))
 		// not ideal, but some filtering here is the most elegant option
-		if (!this.hasMoved && this.spaceHelper(moves[0]).isEmpty()) {
+		if (! this.hasMoved && Piece.spaceHelper(moves[0]).isEmpty()) {
 			moves.push(Utils.coordIncrementer[fwd](moves[0]))
 		}
 		// no on-board moves remaining signifies a Pawn promotion
 		// TODO this adds a move but does not highlight or execute properly
 		if (moves.length == 0) {
-			moves.push(this.pos)
-		}
-		return moves
-	}
-
-	legalityFilter(possibleMoves) {
-		let moves = {}
-		for (var pos of possibleMoves) {
-			let space = this.spaceHelper(pos)
-			if (space.isEmpty()) {
-				if (pos[0] == this.getPosition()[0]) {
-					moves[pos] = 'm'
-				}
-			} else {
-				if (this.isEnemyOf(space.getContents())) {
-					if (pos[0] != this.getPosition()[0]) {
-						moves[pos] = 'a'
-					}
-					// TODO implement promotion
-				} else if (this == space.getContents()) {
-					// moves[pos] = 'p'
-				}
-			}
+			moves.push(this.position)
 		}
 		return moves
 	}
 }
 
 class Rook extends Piece {
-	constructor(id, position, clickFn, spaceFn) {
-		super(id, position, clickFn, spaceFn)
+	constructor(id, position) {
+		super(id, position)
 		this.directions = ['up', 'down', 'left', 'right']
 		if (this.id.charAt(1) == 'w') {
 			this.img = 'pieces/rlt60.png'
@@ -183,15 +145,11 @@ class Rook extends Piece {
 		}
 		this.element.src = this.img
 	}
-
-	getType() {
-		return 'Rook'
-	}
 }
 
 class Knight extends Piece {
-	constructor(id, position, clickFn, spaceFn) {
-		super(id, position, clickFn, spaceFn)
+	constructor(id, position) {
+		super(id, position)
 		if (this.id.charAt(1) == 'w') {
 			this.img = 'pieces/nlt60.png'
 		} else {
@@ -200,18 +158,14 @@ class Knight extends Piece {
 		this.element.src = this.img
 	}
 
-	getType() {
-		return 'Knight'
-	}
-
 	getPossibleMoves() {
-		return Utils.validKnightCoords(this.pos)
+		return Utils.validKnightCoords(this.position)
 	}
 }
 
 class Bishop extends Piece {
-	constructor(id, position, clickFn, spaceFn) {
-		super(id, position, clickFn, spaceFn)
+	constructor(id, position) {
+		super(id, position)
 		this.directions = ['upleft', 'upright', 'downleft', 'downright']
 		if (this.id.charAt(1) == 'w') {
 			this.img = 'pieces/blt60.png'
@@ -220,15 +174,11 @@ class Bishop extends Piece {
 		}
 		this.element.src = this.img
 	}
-
-	getType() {
-		return 'Bishop'
-	}
 }
 
 class Queen extends Piece {
-	constructor(id, position, clickFn, spaceFn) {
-		super(id, position, clickFn, spaceFn)
+	constructor(id, position) {
+		super(id, position)
 		this.directions = ['up', 'upleft', 'upright', 'down', 'downleft', 'downright', 'left', 'right']
 		if (this.id.charAt(1) == 'w') {
 			this.img = 'pieces/qlt60.png'
@@ -237,16 +187,11 @@ class Queen extends Piece {
 		}
 		this.element.src = this.img
 	}
-
-	getType() {
-		return 'Queen'
-	}
 }
 
 class King extends Piece {
-	constructor(id, position, clickFn, spaceFn, castleFn) {
-		super(id, position, clickFn, spaceFn)
-		this.castleHandler = castleFn
+	constructor(id, position) {
+		super(id, position)
 		if (this.id.charAt(1) == 'w') {
 			this.img = 'pieces/klt60.png'
 		} else {
@@ -255,40 +200,12 @@ class King extends Piece {
 		this.element.src = this.img
 	}
 
-	getType() {
-		return 'King'
-	}
-
 	getPossibleMoves() {
 		let moves = []
 		for (var dir in Utils.coordIncrementer) {
-			let cur = Utils.coordIncrementer[dir](this.pos)
-			if (Utils.isValidSpace(cur)) {
+			let cur = Utils.coordIncrementer[dir](this.position)
+			if (Utils.isValidCoord(cur)) {
 				moves.push(cur)
-			}
-		}
-		return moves
-	}
-
-	legalityFilter(possibleMoves) {
-		let moves = {}
-		let [canCastle, castlingMoves] = this.castleHandler(this)
-		if (canCastle) {
-			possibleMoves = possibleMoves.concat(castlingMoves)
-		}
-		for (var pos of possibleMoves) {
-			let space = this.spaceHelper(pos)
-			if (space.isEmpty()) {
-				moves[pos] = 'm'
-			} else {
-				let piece = space.getContents()
-				if (this.isEnemyOf(piece)) {
-					moves[pos] = 'a'
-				} else {
-					if (canCastle && piece.getType() == 'Rook') {
-						moves[pos] = ['c', piece.getID()]
-					}
-				}
 			}
 		}
 		return moves
